@@ -1,0 +1,9 @@
+Makefile
+config.log
+config.status
+src/.deps/
+src/Makefile
+src/config.h
+src/mandelSSE
+src/mandelSSE-mandel.o
+src/stamp-h1
