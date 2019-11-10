@@ -1,0 +1,95 @@
+WHAT IS THIS?
+=============
+
+When I got my hands on an SSE enabled processor (an Athlon-XP, back in 2002), 
+I wanted to try out SSE programming... Over the better part of a weekend,
+I created a simple implementation of a Mandelbrot zoomer in native SSE 
+assembly, and was glad to find that it was almost 3 times faster than pure C.
+
+Since then, I also enriched the code so it uses the GNU autotools - it 
+should now work on most Intel platforms: I've checked it on x86-Linux, 
+x86-Windows (MinGW) and amd64-OpenBSD.
+
+The source is available under the GNU license (read COPYING for details).
+
+UPDATE, Nov 2009:
+-----------------
+
+Now that I've learned how to use OpenMP, I am also using OpenMP #pragmas to run 
+both the C and the SSE code in all cores/CPUs. The SSE code had to be inlined
+of course - but it was worth it: the resulting frame rate - using Arch Linux 
+on my Atom 330 - jumped from 58 to 160 frames per second.
+
+UPDATE, May 2011:
+-----------------
+
+And since single precision floating point allows for "shallow" dives only,
+the renderer switches to double precision when you zoom deep enough...
+
+Also added a significant optimization: avoid calculating black areas by
+doing a drawing at 1/16 resolution and skipping black areas in full res...
+
+COMPILE/INSTALL/RUN
+===================
+
+    ./configure
+    make
+    src/mandelSSE 
+    
+Use the mouse: left-click to zoom-in, right-click to zoom out.
+Window size is set by default at 480x360. To use a different size:
+
+    src/mandelSSE 800 600
+
+If you are benchmarking your CPU however, you must stick to small sizes,
+otherwise you are benchmarking your graphics card instead of your CPU.
+
+CODERS ONLY
+===========
+
+This is the main loop (brace yourselves):
+
+        ;  x' = x^2 - y^2 + a
+        ;  y' = 2xy + b
+        ;
+        mov     ecx, 0
+        movaps  xmm5, [fours]     ; 4.     4.     4.     4.       ; xmm5
+        movaps  xmm6, [re]        ; a0     a1     a2     a3       ; xmm6
+        movaps  xmm7, [im]        ; b0     b1     b2     b3       ; xmm7
+        xorps   xmm0, xmm0        ; 0.     0.     0.     0.
+        xorps   xmm1, xmm1        ; 0.     0.     0.     0.
+        xorps   xmm3, xmm3        ; 0.     0.     0.     0.       ; xmm3
+loop1:
+        movaps  xmm2, xmm0        ; x0     x1     x2     x3       ; xmm2
+        mulps   xmm2, xmm1        ; x0*y0  x1*y1  x2*y2  x3*y3    ; xmm2
+        mulps   xmm0, xmm0        ; x0^2   x1^2   x2^2   x3^2     ; xmm0
+        mulps   xmm1, xmm1        ; y0^2   y1^2   y2^2   y3^2     ; xmm1
+        movaps  xmm4, xmm0
+        addps   xmm4, xmm1        ; x0^2+y0^2  x1...              ; xmm4
+        subps   xmm0, xmm1        ; x0^2-y0^2  x1...              ; xmm0
+        addps   xmm0, xmm6        ; x0'    x1'    x2'    x3'      ; xmm0
+        movaps  xmm1, xmm2        ; x0*y0  x1*y1  x2*y2  x3*y3    ; xmm1
+        addps   xmm1, xmm1        ; 2x0*y0 2x1*y1 2x2*y2 2x3*y3   ; xmm1
+        addps   xmm1, xmm7        ; y0'    y1'    y2'    y3'      ; xmm1
+        cmpltps xmm4, xmm5        ; <4     <4     <4     <4 ?     ; xmm2
+        movaps  xmm2, xmm4
+
+; at this point, xmm2 has all 1s in the non-overflowed pixels
+
+        movmskps eax, xmm4        ; (lower 4 bits reflect comparisons)
+        andps   xmm4, [ones]      ; so, prepare to increase the non-over
+        addps   xmm3, xmm4        ; by updating the 4 bailout counters
+        or      eax, eax          ; have all 4 pixels overflowed ?
+        jz      short nomore      ; yes, we're done
+
+        inc     ecx
+        cmp     ecx, 119
+        jnz     short loop1
+  
+COMMENTS
+========
+Since it reports frame rate at the end, you can use it as a benchmark 
+for SSE instructions - it puts the SSE registers under quite a load. 
+
+I've also coded a CUDA version, if you have an NVIDIA card...
+(http://users.softlab.ece.ntua.gr/~ttsiod/mandelSSE.html)
