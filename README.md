@@ -61,7 +61,7 @@ This is the main loop (brace yourselves):
         xorps   xmm0, xmm0        ; 0.     0.     0.     0.
         xorps   xmm1, xmm1        ; 0.     0.     0.     0.
         xorps   xmm3, xmm3        ; 0.     0.     0.     0.       ; xmm3
-loop1:
+    loop1:
         movaps  xmm2, xmm0        ; x0     x1     x2     x3       ; xmm2
         mulps   xmm2, xmm1        ; x0*y0  x1*y1  x2*y2  x3*y3    ; xmm2
         mulps   xmm0, xmm0        ; x0^2   x1^2   x2^2   x3^2     ; xmm0
@@ -76,7 +76,7 @@ loop1:
         cmpltps xmm4, xmm5        ; <4     <4     <4     <4 ?     ; xmm2
         movaps  xmm2, xmm4
 
-; at this point, xmm2 has all 1s in the non-overflowed pixels
+    ; at this point, xmm2 has all 1s in the non-overflowed pixels
 
         movmskps eax, xmm4        ; (lower 4 bits reflect comparisons)
         andps   xmm4, [ones]      ; so, prepare to increase the non-over
@@ -93,5 +93,5 @@ COMMENTS
 Since it reports frame rate at the end, you can use it as a benchmark 
 for SSE instructions - it puts the SSE registers under quite a load. 
 
-I've also coded a CUDA version, if you have an NVIDIA card...
-(http://users.softlab.ece.ntua.gr/~ttsiod/mandelSSE.html)
+I've also coded a CUDA version, if you have an NVIDIA card;
+see the detailed blog post I wrote about it [here](https://www.thanassis.space/mandelSSE.html).
