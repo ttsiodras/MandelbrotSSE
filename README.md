@@ -31,6 +31,19 @@ the renderer switches to double precision when you zoom deep enough...
 Also added a significant optimization: avoid calculating black areas by
 doing a drawing at 1/16 resolution and skipping black areas in full res...
 
+UPDATE, October 2020:
+---------------------
+
+After [porting a fixed-point arithmetic version of this to a 1.4$
+microcontroller](https://www.youtube.com/watch?v=5875JOnFDLg), I got 
+interested in doing algorithmic optimizations. The "XaoS" branch
+of the repository demonstrates the awesome power of a better algorithm...
+Ihe code [is of course far more
+complex](https://github.com/ttsiodras/MandelbrotSSE/blob/XaoS/src/mandel.c#L156)
+but the end result speaks for itself: Even in deep-dives, by optimally
+reusing the pixels drawn in the previous frame, we get amazing speeds - even
+with large windows.
+
 COMPILE/INSTALL/RUN
 ===================
 
