@@ -1,26 +1,30 @@
 #include <config.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <SDL.h>
 
-// Number of iterations per pixel
-// If you change this, change it in the ASM too...
-#define ITERA 240
+// Define this for an auto-zoomed session
+// #define AUTOPILOT
 
-int MAXX;
-int MAXY;
+// Number of Mandelbrot iterations per pixel
+#define ITERA 2048
+
+// The globals:
+
+// Window dimensions
+int MAXX, MAXY;
+
+// SDL surface we draw in
 SDL_Surface *surface;
-Uint8 *buffer = NULL;
-Uint8 *previewBufferOriginal = NULL;
-Uint8 *previewBufferFiltered = NULL;
 
+// The surface buffer; this is where we place our pixel data in
+Uint8 *buffer = NULL;
+
+// Helper to report a fatal error
 void panic(char *fmt, ...)
 {
     va_list arg;
@@ -28,78 +32,58 @@ void panic(char *fmt, ...)
     va_start(arg, fmt);
     vfprintf(stderr, fmt, arg);
     va_end(arg);
-    exit(0);
+    exit(1);
 }
 
-void init256()
+// Setup window we will draw in
+void init256(int bSSE)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
-        panic("Couldn't initialize SDL: %d\n", SDL_GetError());
+        panic("[x] Couldn't initialize SDL: %d\n", SDL_GetError());
     atexit(SDL_Quit);
 
     surface = SDL_SetVideoMode(MAXX,
                                MAXY, 8, SDL_HWSURFACE | SDL_HWPALETTE);
     if (!surface)
-        panic("Couldn't set video mode: %d", SDL_GetError());
+        panic("[x] Couldn't set video mode: %d", SDL_GetError());
 
     if (SDL_MUSTLOCK(surface)) {
         if (SDL_LockSurface(surface) < 0)
-            panic("Couldn't lock surface: %d", SDL_GetError());
+            panic("[x] Couldn't lock surface: %d", SDL_GetError());
     }
     buffer = (Uint8*)surface->pixels;
 
     // A palette for Mandelbrot zooms...
     {
         SDL_Color palette[256];
-        int i;
-	int ofs=0;
-        for (i = 0; i < 16; i++) {
-            palette[i+ofs].r = 16*(16-abs(i-16));
-            palette[i+ofs].g = 0;
-            palette[i+ofs].b = 16*abs(i-16);
+        for (int value = 0; value<128; value++) {
+            unsigned char red, green, blue;
+            unsigned char quadrant = value / 32;
+            if (quadrant == 0) {
+                blue = (bSSE && !value) ? 0 : 248;
+                green = 8 * (value % 32);
+                red = 0;
+            } else if (quadrant == 1) {
+                blue = 8*(31 - (value % 32));
+                green = 248;
+                red = 0;
+            } else if (quadrant == 2) {
+                blue = 0;
+                green = 248;
+                red = 8*(value % 32);
+            } else {
+                blue = 0;
+                green = 248 - 8 * (value % 32);
+                red = 248;
+            }
+            palette[value].r = red;
+            palette[value].g = green;
+            palette[value].b = blue;
         }
-	ofs= 16;
-        for (i = 0; i < 16; i++) {
-            palette[i+ofs].r = 0;
-            palette[i+ofs].g = 16*(16-abs(i-16));
-            palette[i+ofs].b = 0;
-        }
-	ofs= 32;
-        for (i = 0; i < 16; i++) {
-            palette[i+ofs].r = 0;
-            palette[i+ofs].g = 0;
-            palette[i+ofs].b = 16*(16-abs(i-16));
-        }
-	ofs= 48;
-        for (i = 0; i < 16; i++) {
-            palette[i+ofs].r = 16*(16-abs(i-16));
-            palette[i+ofs].g = 16*(16-abs(i-16));
-            palette[i+ofs].b = 0;
-        }
-	ofs= 64;
-        for (i = 0; i < 16; i++) {
-            palette[i+ofs].r = 0;
-            palette[i+ofs].g = 16*(16-abs(i-16));
-            palette[i+ofs].b = 16*(16-abs(i-16));
-        }
-	ofs= 80;
-        for (i = 0; i < 16; i++) {
-            palette[i+ofs].r = 16*(16-abs(i-16));
-            palette[i+ofs].g = 0;
-            palette[i+ofs].b = 16*(16-abs(i-16));
-        }
-	ofs= 96;
-        for (i = 0; i < 16; i++) {
-            palette[i+ofs].r = 16*(16-abs(i-16));
-            palette[i+ofs].g = 16*(16-abs(i-16));
-            palette[i+ofs].b = 16*(16-abs(i-16));
-        }
-	ofs= 112;
-        for (i = 0; i < 16; i++) {
-            palette[i+ofs].r = 16*(8-abs(i-8));
-            palette[i+ofs].g = 16*(8-abs(i-8));
-            palette[i+ofs].b = 16*(8-abs(i-8));
-        }
+        palette[128].r = 0;
+        palette[128].g = 0;
+        palette[128].b = 0;
+
         SDL_SetColors(surface, palette, 0, 256);
     }
 }
@@ -111,13 +95,13 @@ int kbhit(int *xx, int *yy)
 
     Uint8 *keystate = SDL_GetKeyState(NULL);
     if ( keystate[SDLK_ESCAPE] )
-	return 1;
+        return 1;
 
     if(SDL_PollEvent(&event)) {
         switch(event.type) {
-	case SDL_QUIT:
-	    return 1;
-	    break;
+        case SDL_QUIT:
+            return 1;
+            break;
         default:
             break;
         }
@@ -125,562 +109,392 @@ int kbhit(int *xx, int *yy)
 
     Uint8 btn = SDL_GetMouseState (&x, &y);
     if (btn & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-	*xx = x;
-	*yy = y;
-	return 2;
+        *xx = x;
+        *yy = y;
+        return 2;
     }
     if (btn & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-	*xx = x;
-	*yy = y;
-	return 3;
+        *xx = x;
+        *yy = y;
+        return 3;
     }
     return 0;
 }
 
-// SSE requires data to be aligned to 16bytes, so...
+// Structure used to sort the coordinate distances from the previous frame.
+// Keep reading further below to understand how this is used.
+typedef struct tagPoint {
+    double distance;
+    int idx_original;
+    int idx_best;
+} Point;
 
-#ifdef __GNUC__
-    #define DECLARE_ALIGNED(n,t,v)       t v __attribute__ ((aligned (n)))
-#else
-    #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
-#endif
-
-DECLARE_ALIGNED(16,double,ones[2]) = { 1.0, 1.0 };
-DECLARE_ALIGNED(16,double,fours[2]) = { 4.0, 4.0 };
-
-DECLARE_ALIGNED(16,float,onesf[4]) = { 1.0f, 1.0f, 1.0f, 1.0f };
-DECLARE_ALIGNED(16,float,foursf[4]) = { 4.0f, 4.0f, 4.0f, 4.0f };
-
-DECLARE_ALIGNED(16,unsigned,allbits[4]) = {0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF};
-
-void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
+// Sorting function for quicksort.
+int compare_points(const void *p1, const void *p2)
 {
-    DECLARE_ALIGNED(16,float,re[4]);
-    DECLARE_ALIGNED(16,float,im[4]);
-    DECLARE_ALIGNED(16,unsigned,k1[4]);
-
-#ifndef SIMD_SSE
-    DECLARE_ALIGNED(16,float,rez[4]);
-    DECLARE_ALIGNED(16,float,imz[4]);
-    float t1, t2, o1, o2;
-    int k;
-#else
-    DECLARE_ALIGNED(16,float,outputs[4]);
-#endif
-
-    re[0] = (float) xcur;
-    re[1] = (float) (xcur + xstep);
-    re[2] = (float) (xcur + 2*xstep);
-    re[3] = (float) (xcur + 3*xstep);
-
-    im[0] = im[1] = im[2] = im[3] = (float) ycur;
-
-#ifndef SIMD_SSE
-    rez[0] = 0.0f;
-    rez[1] = 0.0f;
-    rez[2] = 0.0f;
-    rez[3] = 0.0f;
-    imz[0] = 0.0f;
-    imz[1] = 0.0f;
-    imz[2] = 0.0f;
-    imz[3] = 0.0f;
-
-    k1[0] = k1[1] = k1[2] = k1[3] = 0;
-    k = 1;
-    while (k < ITERA) {
-	if (!k1[0]) {
-	    o1 = rez[0] * rez[0];
-	    o2 = imz[0] * imz[0];
-	    t2 = 2 * rez[0] * imz[0];
-	    t1 = o1 - o2;
-	    rez[0] = t1 + re[0];
-	    imz[0] = t2 + im[0];
-	    if (o1 + o2 > 4)
-		k1[0] = k;
-	}
-
-	if (!k1[1]) {
-	    o1 = rez[1] * rez[1];
-	    o2 = imz[1] * imz[1];
-	    t2 = 2 * rez[1] * imz[1];
-	    t1 = o1 - o2;
-	    rez[1] = t1 + re[1];
-	    imz[1] = t2 + im[1];
-	    if (o1 + o2 > 4)
-		k1[1] = k;
-	}
-	
-	if (!k1[2]) {
-	    o1 = rez[2] * rez[2];
-	    o2 = imz[2] * imz[2];
-	    t2 = 2 * rez[2] * imz[2];
-	    t1 = o1 - o2;
-	    rez[2] = t1 + re[2];
-	    imz[2] = t2 + im[2];		    
-	    if (o1 + o2 > 4)
-		k1[2] = k;
-	}
-	
-	if (!k1[3]) {
-	    o1 = rez[3] * rez[3];
-	    o2 = imz[3] * imz[3];
-	    t2 = 2 * rez[3] * imz[3];
-	    t1 = o1 - o2;
-	    rez[3] = t1 + re[3];
-	    imz[3] = t2 + im[3];
-	    if (o1 + o2 > 4)
-		k1[3] = k;
-	}
-
-	if (k1[0]*k1[1]*k1[2]*k1[3])
-	    break;
-
-	k++;
-    }
-    
-#else
-    k1[0] = k1[1] = k1[2] = k1[3] = 0;
-
-					      // x' = x^2 - y^2 + a
-					      // y' = 2xy + b
-					      //
-    asm("mov    $0xEF,%%ecx\n\t"
-	"movaps %4,%%xmm5\n\t"                //  4.     4.     4.     4.       ; xmm5
-	"movaps %2,%%xmm6\n\t"                //  a0     a1     a2     a3       ; xmm6
-	"movaps %3,%%xmm7\n\t"                //  b0     b1     b2     b3       ; xmm7
-	"xorps  %%xmm0,%%xmm0\n\t"            //  0.     0.     0.     0.
-	"xorps  %%xmm1,%%xmm1\n\t"            //  0.     0.     0.     0.
-	"xorps  %%xmm3,%%xmm3\n\t"            //  0.     0.     0.     0.       ; bailout counters
-	"1:\n\t"
-	"movaps %%xmm0,%%xmm2\n\t"            //  x0     x1     x2     x3       ; xmm2
-	"mulps  %%xmm1,%%xmm2\n\t"            //  x0*y0  x1*y1  x2*y2  x3*y3    ; xmm2
-	"mulps  %%xmm0,%%xmm0\n\t"            //  x0^2   x1^2   x2^2   x3^2     ; xmm0
-	"mulps  %%xmm1,%%xmm1\n\t"            //  y0^2   y1^2   y2^2   y3^2     ; xmm1
-	"movaps %%xmm0,%%xmm4\n\t"            //  
-	"addps  %%xmm1,%%xmm4\n\t"            //  x0^2+y0^2  x1...              ; xmm4
-	"subps  %%xmm1,%%xmm0\n\t"            //  x0^2-y0^2  x1...              ; xmm0
-	"addps  %%xmm6,%%xmm0\n\t"            //  x0'    x1'    x2'    x3'      ; xmm0
-	"movaps %%xmm2,%%xmm1\n\t"            //  x0*y0  x1*y1  x2*y2  x3*y3    ; xmm1
-	"addps  %%xmm1,%%xmm1\n\t"            //  2x0*y0 2x1*y1 2x2*y2 2x3*y3   ; xmm1
-	"addps  %%xmm7,%%xmm1\n\t"            //  y0'    y1'    y2'    y3'      ; xmm1
-	"cmpltps %%xmm5,%%xmm4\n\t"           //  <4     <4     <4     <4 ?     ; xmm2
-	"movaps %%xmm4,%%xmm2\n\t"            //  xmm2 has all 1s in the non-overflowed pixels
-	"movmskps %%xmm4,%%eax\n\t"           //  (lower 4 bits reflect comparisons)
-	"andps  %5,%%xmm4\n\t"                //  so, prepare to increase the non-overflowed ("and" with onesf)
-	"addps  %%xmm4,%%xmm3\n\t"            //  by updating their counters
-	"or     %%eax,%%eax\n\t"              //  have all 4 pixels overflowed ?
-	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f)
-	"dec    %%ecx\n\t"                    //  otherwise,repeat 239 times...
-	"jnz    1b\n\t"                       //  by jumping backward to label 1 (1b)
-	"movaps %%xmm2,%%xmm4\n\t"            //  xmm4 has all 1s in the non-overflowed pixels
-	"xorps  %6,%%xmm4\n\t"                //  xmm4 has all 1s in the overflowed pixels (xoring with allbits)
-	"andps  %%xmm4,%%xmm3\n\t"            //  zero out the xmm3 parts that belong to non-overflowed (set to black)
-	"2:\n\t"
-	"movaps %%xmm3,%0\n\t"
-	:"=m"(outputs[0]),"=m"(outputs[2])
-	:"m"(re[0]),"m"(im[0]),"m"(foursf[0]),"m"(onesf[0]),"m"(allbits[0])
-	:"%eax","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","memory");
-
-    k1[0] = (int)(outputs[0]);
-    k1[1] = (int)(outputs[1]);
-    k1[2] = (int)(outputs[2]);
-    k1[3] = (int)(outputs[3]);
-
-#endif
-
-    *(*p)++ = k1[0];
-    *(*p)++ = k1[1];
-    *(*p)++ = k1[2];
-    *(*p)++ = k1[3];
+    return ((Point*)p1)->distance < ((Point*)p2)->distance;
 }
 
-void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
+void mandel(
+    double xld, double yld, double xru, double yru,
+    double percentageOfPixelsToRedraw)
 {
-    DECLARE_ALIGNED(16,double,re[2]);
-    DECLARE_ALIGNED(16,double,im[2]);
-    DECLARE_ALIGNED(16,unsigned,k1[2]);
-
-#ifndef SIMD_SSE
-    DECLARE_ALIGNED(16,double,rez[2]);
-    DECLARE_ALIGNED(16,double,imz[2]);
-    double t1, t2, o1, o2;
-    int k;
-#else
-    DECLARE_ALIGNED(16,double,outputs[2]);
-#endif
-
-    re[0] = xcur;
-    re[1] = (xcur + xstep);
-
-    im[0] = im[1] = ycur;
-
-#ifndef SIMD_SSE
-    rez[0] = 0.0f;
-    rez[1] = 0.0f;
-    imz[0] = 0.0f;
-    imz[1] = 0.0f;
-
-    k = k1[0] = k1[1] = 0;
-    while (k < ITERA) {
-	if (!k1[0]) {
-	    o1 = rez[0] * rez[0];
-	    o2 = imz[0] * imz[0];
-	    t2 = 2 * rez[0] * imz[0];
-	    t1 = o1 - o2;
-	    rez[0] = t1 + re[0];
-	    imz[0] = t2 + im[0];
-	    if (o1 + o2 > 4)
-		k1[0] = k;
-	}
-
-	if (!k1[1]) {
-	    o1 = rez[1] * rez[1];
-	    o2 = imz[1] * imz[1];
-	    t2 = 2 * rez[1] * imz[1];
-	    t1 = o1 - o2;
-	    rez[1] = t1 + re[1];
-	    imz[1] = t2 + im[1];
-	    if (o1 + o2 > 4)
-		k1[1] = k;
-	}
-	
-	if (k1[0]*k1[1])
-	    break;
-
-	k++;
-    }
-    
-#else
-    k1[0] = k1[1] = 0;
-					      // x' = x^2 - y^2 + a
-					      // y' = 2xy + b
-					      //
-    asm("mov    $0xEF,%%ecx\n\t"
-	"movapd %3,%%xmm5\n\t"                //  4.     4.        ; xmm5
-	"movapd %1,%%xmm6\n\t"                //  a0     a1        ; xmm6
-	"movaps %2,%%xmm7\n\t"                //  b0     b1        ; xmm7
-	"xorpd  %%xmm0,%%xmm0\n\t"            //  0.     0.    
-	"xorpd  %%xmm1,%%xmm1\n\t"            //  0.     0.    
-	"xorpd  %%xmm3,%%xmm3\n\t"            //  0.     0.        ; bailout counters
-	"1:\n\t"
-	"movapd %%xmm0,%%xmm2\n\t"            //  x0     x1        ; xmm2
-	"mulpd  %%xmm1,%%xmm2\n\t"            //  x0*y0  x1*y1     ; xmm2
-	"mulpd  %%xmm0,%%xmm0\n\t"            //  x0^2   x1^2      ; xmm0
-	"mulpd  %%xmm1,%%xmm1\n\t"            //  y0^2   y1^2      ; xmm1
-	"movapd %%xmm0,%%xmm4\n\t"            //  
-	"addpd  %%xmm1,%%xmm4\n\t"            //  x0^2+y0^2  x1... ; xmm4
-	"subpd  %%xmm1,%%xmm0\n\t"            //  x0^2-y0^2  x1... ; xmm0
-	"addpd  %%xmm6,%%xmm0\n\t"            //  x0'    x1'       ; xmm0
-	"movapd %%xmm2,%%xmm1\n\t"            //  x0*y0  x1*y1     ; xmm1
-	"addpd  %%xmm1,%%xmm1\n\t"            //  2x0*y0 2x1*y1    ; xmm1
-	"addpd  %%xmm7,%%xmm1\n\t"            //  y0'    y1'       ; xmm1
-	"cmpltpd %%xmm5,%%xmm4\n\t"           //  <4     <4        ; xmm2
-	"movapd %%xmm4,%%xmm2\n\t"            //  xmm2 has all 1s in the non-overflowed pixels
-	"movmskpd %%xmm4,%%eax\n\t"           //  (lower 2 bits reflect comparisons)
-	"andpd  %4,%%xmm4\n\t"                //  so, prepare to increase the non-overflowed (and with ones)
-	"addpd  %%xmm4,%%xmm3\n\t"            //  by updating their counters
-	"or     %%eax,%%eax\n\t"              //  have both pixels overflowed ?
-	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f)
-	"dec    %%ecx\n\t"                    //  otherwise,repeat 239 times...
-	"jnz    1b\n\t"                       //  by jumping backward to label 1 (1b)
-	"movapd %%xmm2,%%xmm4\n\t"            //  xmm4 has all 1s in the non-overflowed pixels
-	"xorpd  %5,%%xmm4\n\t"                //  xmm4 has all 1s in the overflowed pixels (xoring with allbits)
-	"andpd  %%xmm4,%%xmm3\n\t"            //  zero out the xmm3 parts that belong to non-overflowed (set to black)
-	"2:\n\t"
-	"movapd %%xmm3,%0\n\t"
-	:"=m"(outputs[0])
-	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0])
-	:"%eax","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","memory");
-
-    k1[0] = (int)(outputs[0]);
-    k1[1] = (int)(outputs[1]);
-
-#endif
-
-    *(*p)++ = k1[0];
-    *(*p)++ = k1[1];
-}
-
-void preMandel(double xld, double yld, double xru, double yru)
-{
-    unsigned char *p = (unsigned char *) previewBufferOriginal;
-    double xstep, ystep, xcur, ycur;
+    // Helper counters
     int i, j;
 
-    int MINI_MAXX = MAXX/4;
-    int MINI_MAXY = MAXY/4;
+    // The steps we move per each iteration of the loop (at x and y directions)
+    // as well as the current X and Y coordinate on the complex plane.
+    double xstep, ystep, xcur, ycur;
 
-    xstep = (xru - xld)/MINI_MAXX;
-    ystep = (yru - yld)/MINI_MAXY;
+    // The buffer index we draw in; 0 -> 1 -> 0 -> 1 ...
+    static int bufIdx = 0;
 
-#if defined(USE_OPENMP)
-    #pragma omp parallel for schedule(dynamic,4) private(p,xcur,ycur,i,j)
-#endif
-    for (i=0; i<MINI_MAXY; i++) {
-	xcur = xld;
-	ycur = yru - i*ystep;
-	p = &previewBufferOriginal[i*MINI_MAXX];
-        for (j=0; j<MINI_MAXX; j+=4) {
-	    CoreLoopDouble(xcur, ycur, xstep, &p);
-	    xcur += 2*xstep;
-	    CoreLoopDouble(xcur, ycur, xstep, &p);
-	    xcur += 2*xstep;
+    // The double-buffered X and Y coordinates
+    static double *xcoords[2] = {NULL, NULL}, *ycoords[2] = {NULL, NULL};
+
+    // The lookup tables telling us where a close enough pixel can be found
+    static int *xlookup, *ylookup;
+
+    // For Xaos algorithm to work, I need two screen buffers;
+    // one to draw in, and one with the previous frame.
+    // XaoS algorithm will try to reuse as many of the pixels
+    // from the old frame as possible.
+    static Uint8 *bufferMem[2];
+
+    // As we zoom deeper and deeper, the reused pixels lie further and
+    // further away from the one we are drawing. Inevitably, we end up
+    // needing to recalculate. When that happens, if it impacts many
+    // pixels, we get a sudden - and very noticeable - drop in framerate.
+    // To avoid this, we need to strike a balance between reusing old
+    // pixels and recomputing new ones. If we constantly use old pixels,
+    // we will go...
+    //
+    //      fast/fast/fast/SLOW/fast/fast/fast/SLOW...
+    //
+    // It's much better - visually - to be fast_but_not_fast_as we_could,
+    // but to do this consistently - with a near constant frame rate.
+    //
+    // To that end, after we compute the distances from the new coordinates
+    // to those in the old frame, we will sort them - and the topmost pixels
+    // in the list (based on percentageOfPixelsToRedraw)
+    // will be forced to update.
+    static Point *points;
+
+    int bFirstFrameEver = !xcoords[0];
+
+    // In the first execution of this function, allocate the buffers
+    if (bFirstFrameEver) {
+        // We need to store the X and Y coordinates of the pixels in both
+        // horizontal and vertical directions.
+        // And we need to do it for this frame, and the previous frame.
+        // Ergo, allocate two buffers for each.
+        for (i=0; i<2; i++) {
+            xcoords[i] = malloc(MAXX*sizeof(double));
+            ycoords[i] = malloc(MAXY*sizeof(double));
+            memset(xcoords[i], 0, MAXX*sizeof(double));
+            memset(ycoords[i], 0, MAXY*sizeof(double));
+
+            // We also need two screen buffers - one to draw in,
+            // and one with the old frame.
+            bufferMem[i] = malloc(MAXX*MAXY);
         }
+
+        // In this frame, we will compute a lookup for each X and Y;
+        // it will be -1 if the xcoords/ycoords are too different
+        // from those of the previous frame (forcing a recalculation).
+        // Otherwise, it will be an index into the "close enough" pixel.
+        xlookup = malloc(MAXX*sizeof(int));
+        ylookup = malloc(MAXY*sizeof(int));
+
+        // To determine the pixels whose coordinates are close enough to
+        // those of the previous frame, MAXX slots will suffice;
+        // for both X and Y directions, since MAXX > MAXY.
+        points = malloc(MAXX*sizeof(Point));
     }
 
-    // We now have a 1/16 of the total picture (in the previewBufferOriginal)
-    // Each of these mini-pixels corresponds to a 4x4 block of pixels.
-    //
-    // But how can we use this as an accelerator for the black areas?
-    //
-    // Well, we can simply map and see if a 4x1 area maps to a black pixel
-    // in the mini-preview, and if so, plot all 4 pixels as black.
-    //
-    // Only... this wont work.
-    //
-    // The mini-preview is just a sampling - perhaps one of the 4
-    // pixels is black, and we just happened to "fall" on it in
-    // the preview. Not all 4 pixels must be black, only one is!
-    //
-    // We need to "shrink" the black areas in the preview
-    // to avoid this problem.
-    //
-    // And that's what the code below does: it only outputs a black pixel
-    // (in the previewBufferFiltered) if the original pixel from
-    // previewBufferOriginal AND all the 4 neighbors, were black.
-    //
-    // This isn't bullet-proof, but it is close enough.
-    //
-    Uint8 *pSrc = previewBufferOriginal;
-    Uint8 *pDst = previewBufferFiltered;
-    for (i=0; i<MINI_MAXY; i++) {
-        for (j=0; j<MINI_MAXX; j++) {
-	    Uint8 up=0,left=0,down=0,right=0;
-	    if (i>0) up = *(pSrc-MINI_MAXX);
-	    if (i<MINI_MAXY-1) down = *(pSrc+MINI_MAXX);
-	    if (j>0) left = *(pSrc-1);
-	    if (j<MINI_MAXX-1) right = *(pSrc+1);
-	    // set final preview pixel to black only if 
-	    // both itself and all 4 neighbors are black
-	    *pDst++ = *pSrc++ | up | down | left | right;
-	}
-    }
-}
+    // Move to the next buffer
+    bufIdx ^= 1;
 
-void mandelFloat(double xld, double yld, double xru, double yru)
-{
-    int i, j;
-    double xstep, ystep, xcur, ycur;
-    unsigned char *p = (unsigned char *) buffer;
-    #ifndef NDEBUG
-    int saved = 0;
-    #endif
-
+    // Steps from each pixel to the next
     xstep = (xru - xld)/MAXX;
     ystep = (yru - yld)/MAXY;
 
-#if defined(USE_OPENMP)
-#pragma omp parallel for schedule(dynamic,4) private(p,xcur,ycur,i,j)
-#endif
-    for (i=0; i<MAXY; i++) {
-	Uint32 offset = (i>>2)*(MAXX >> 2);
-	xcur = xld;
-	ycur = yru - i*ystep;
-	p = &buffer[i*MAXX];
-        for (j=0; j<MAXX; j+=4, offset++) {
-	    // Avoid calculating black areas - see comment in preMandel
-	    if (0 == previewBufferFiltered[offset]) {
-		*p++ = 0;
-		*p++ = 0;
-		*p++ = 0;
-		*p++ = 0;
-		xcur += 4*xstep;
-		#ifndef NDEBUG
-		saved ++;
-		#endif
-		continue;
-	    }
-	    CoreLoopFloat(xcur, ycur, xstep, &p);
-	    xcur += 4*xstep;
+    xcur = xld;
+    for (i=0; i<MAXX; i++) {
+        int idx_best = -1;
+        double diff = 1e10;
+        // we compute xcoords with a linear step from xld to xru.
+        xcoords[bufIdx][i] = xcur;
+        // We then scan the xcoords of the previous frame, to find
+        // the one with the closest coordinate.
+        for (j=i-10; j<i+10; j++) {
+            if(j<0) continue;
+            if(j>MAXX-1) continue;
+            double ndiff = fabs(xcur - xcoords[bufIdx^1][j]);
+            if (ndiff < diff) {
+                diff = ndiff;
+                idx_best = j;
+            }
+        }
+        // ...and store the data with computed distances for all X pixels
+        points[i].distance = diff;
+        points[i].idx_best = idx_best;
+        points[i].idx_original = i;
+        xcur += xstep;
+    }
+    // We then sort based on distance. The pixels that have the 
+    // greatest distances will be in the front of the array.
+    qsort(points, MAXX, sizeof(Point), compare_points);
+    // We scan the array, starting from the pixels with the largest distance
+    // and moving to better ones
+    for(i=0; i<MAXX; i++) {
+        int orig_idx = points[i].idx_original;
+        int idx_best = points[i].idx_best;
+        if (bFirstFrameEver || (i<MAXX*percentageOfPixelsToRedraw/100))
+            // we force a redraw for the requested percentage of pixels
+            xlookup[orig_idx] = -1;
+        else {
+            // For the rest, we store the index into the best approximation
+            xlookup[orig_idx] = idx_best;
+            // But also update the xcoord, to indicate we didn't
+            // really compute an accurate one; we re-used the old one!
+            xcoords[bufIdx][orig_idx] = xcoords[bufIdx^1][idx_best];
         }
     }
+
+    // The same code, but for the Y coordinates.
+    // See comments above to understand how this works.
+    ycur = yru;
+    for (i=0; i<MAXY; i++) {
+        int idx_best = -1;
+        double diff = 1e10;
+        ycoords[bufIdx][i] = ycur;
+        for (j=i-10; j<i+10; j++) {
+            if(j<0) continue;
+            if(j>MAXY-1) continue;
+            double ndiff = fabs(ycur - ycoords[bufIdx^1][j]);
+            if (ndiff < diff) {
+                diff = ndiff;
+                idx_best = j;
+            }
+        }
+        points[i].distance = diff;
+        points[i].idx_best = idx_best;
+        points[i].idx_original = i;
+        ycur -= ystep;
+    }
+    qsort(points, MAXY, sizeof(Point), compare_points);
+    for(i=0; i<MAXY; i++) {
+        int orig_idx = points[i].idx_original;
+        int idx_best = points[i].idx_best;
+        if (bFirstFrameEver || (i<MAXY*percentageOfPixelsToRedraw/100))
+            ylookup[orig_idx] = -1;
+        else {
+            ylookup[orig_idx] = idx_best;
+            ycoords[bufIdx][orig_idx] = ycoords[bufIdx^1][idx_best];
+        }
+    }
+
+    // Armed now with the xlookup and ylookup, we can render the frame.
+    // Set the output pointer to the proper buffer
+    unsigned char *p = &bufferMem[bufIdx][0];
+
+    // ...and start descending scanlines, from yru down to yld,
+    // one ystep at a time.
+    ycur = yru;
+    for (i=0; i<MAXY; i++) {
+        int yclose = ylookup[i];
+        // Start moving from xld to xru, one xstep at a time
+        xcur = xld;
+        for (j=0; j<MAXX; j++) {
+            // if both the xlookup and ylookup indicate that we can
+            // lookup a pixel from the old frame...
+            int xclose = xlookup[j];
+            if (xclose != -1 && yclose != -1) {
+                // ...then just re-use it!
+                *p++ = bufferMem[bufIdx^1][yclose*MAXX + xclose];
+            } else {
+                // Otherwise, perform a full computation.
+                double re, im;
+                double rez, imz;
+                double t1, t2, o1, o2;
+                int k;
+
+                re = xcur;
+                im = ycur;
+                rez = 0.0f;
+                imz = 0.0f;
+
+                k = 0;
+                while (k < ITERA) {
+                    o1 = rez * rez;
+                    o2 = imz * imz;
+                    t2 = 2 * rez * imz;
+                    t1 = o1 - o2;
+                    rez = t1 + re;
+                    imz = t2 + im;
+                    if (o1 + o2 > 4)
+                        break;
+                    k++;
+                }
+                *p++ = k == ITERA ? 128 : k&127;
+            }
+            xcur += xstep;
+        }
+        ycur -= ystep;
+    }
+    // Copy the memory-based buffer into the SDL one...
+    memcpy(buffer, bufferMem[bufIdx], MAXX*MAXY);
+    // ...and blit it on the screen.
     SDL_UpdateRect(surface, 0, 0, MAXX, MAXY);
-    #ifndef NDEBUG
-    printf("Saved due to preview: %4.4f%%\n", (100.0*saved)/(MAXX*MAXY/4));
-    #endif
 }
 
-void mandelDouble(double xld, double yld, double xru, double yru)
+int autopilot()
 {
-    int i, j;
-    double xstep, ystep, xcur, ycur;
-    unsigned char *p = (unsigned char *) buffer;
-    #ifndef NDEBUG
-    int saved = 0;
-    #endif
+    int i = 0;
+    int x,y;
+    double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
+    const double
+        targetx = -0.72996052273553402312, targety = -0.24047620199671820851;
+    // targetx = -0.73162092639301889996, targety = -0.25655927868100719680;
 
-    xstep = (xru - xld)/MAXX;
-    ystep = (yru - yld)/MAXY;
+    while(i<2500) {
+        unsigned st = SDL_GetTicks();
+        mandel(xld, yld, xru, yru, 0.75); // Re-use 99.25% of the pixels.
+        unsigned en = SDL_GetTicks();
+        if (en - st < 17)
+            // Limit frame rate to 60 fps.
+            SDL_Delay(17 - en + st);
 
-#if defined(USE_OPENMP)
-#pragma omp parallel for schedule(dynamic,4) private(p,xcur,ycur,i,j)
-#endif
-    for (i=0; i<MAXY; i++) {
-	Uint32 offset = (i>>2)*(MAXX >> 2);
-	xcur = xld;
-	ycur = yru - i*ystep;
-	p = &buffer[i*MAXX];
-        for (j=0; j<MAXX; j+=4, offset++) {
-	    // Avoid calculating black areas - see comment in preMandel
-	    if (0 == previewBufferFiltered[offset]) {
-		*p++ = 0;
-		*p++ = 0;
-		*p++ = 0;
-		*p++ = 0;
-		xcur += 4*xstep;
-		#ifndef NDEBUG
-		saved ++;
-		#endif
-		continue;
-	    }
-	    CoreLoopDouble(xcur, ycur, xstep, &p);
-	    xcur += 2*xstep;
-	    CoreLoopDouble(xcur, ycur, xstep, &p);
-	    xcur += 2*xstep;
-        }
+        int result = kbhit(&x, &y);
+        if (result == 1)
+            break;
+        xld += (targetx - xld)/100.;
+        xru += (targetx - xru)/100.;
+        yld += (targety - yld)/100.;
+        yru += (targety - yru)/100.;
+        i++;
     }
-    SDL_UpdateRect(surface, 0, 0, MAXX, MAXY);
-    #ifndef NDEBUG
-    printf("Saved due to preview: %4.4f%%\n", (100.0*saved)/(MAXX*MAXY/4));
-    #endif
+    return i;
 }
 
-#ifdef _WIN32
+int mousedriven()
+{
+    int x,y;
+    double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
+    unsigned time_since_we_moved = 0;
+    int frames = 0;
 
-#define CHECK(x) {							    \
-    unsigned of = (unsigned) (unsigned long) &x[0];			    \
-    char soThatGccDoesntOptimizeAway[32];				    \
-    sprintf(soThatGccDoesntOptimizeAway, "%08x", of);			    \
-    if (soThatGccDoesntOptimizeAway[7] != '0') {			    \
-	MessageBox(0,							    \
-	    "Your compiler is buggy... "				    \
-	    "it didn't align the SSE variables...\n"			    \
-	    "The application would crash. Aborting.",			    \
-	    "Fatal Error", MB_OK | MB_ICONERROR);			    \
-	exit(1);							    \
-    }									    \
+    while(1) {
+        if (SDL_GetTicks() - time_since_we_moved > 200)
+            // If we haven't moved for more than 200ms,
+            // go to sleep - no need to waste the CPU
+            SDL_Delay(17);
+        else if (SDL_GetTicks() - time_since_we_moved > 50)
+            // if we haven't moved for 50 to 200ms,
+            // draw an accurate frame (0% reuse)
+            mandel(xld, yld, xru, yru, 100);
+        else {
+            // Otherwise draw a low-accuracy frame
+            // (reuse 99.25% of the pixels)
+            unsigned st = SDL_GetTicks();
+            mandel(xld, yld, xru, yru, 0.75);
+            unsigned en = SDL_GetTicks();
+            // Limit frame rate to 60 fps.
+            if (en - st < 17)
+                SDL_Delay(17 - en + st);
+        }
+        int result = kbhit(&x, &y);
+        if (result == 1)
+            break;
+        else if (result == 2 || result == 3) {
+            time_since_we_moved = SDL_GetTicks();
+            double ratiox = ((double)x)/MAXX;
+            double ratioy = ((double)y)/MAXY;
+            double xrange = xru-xld;
+            double yrange = yru-yld;
+            double direction = result==2?1.:-1.;
+            xld += direction*0.01*ratiox*xrange;
+            xru -= direction*0.01*(1.-ratiox)*xrange;
+            yld += direction*0.01*(1.-ratioy)*yrange;
+            yru -= direction*0.01*ratioy*yrange;
+        }
+        frames++;
+    }
+    // Inform point reached, for potential autopilot target
+    printf("[-] Reached final point: %2.20f, %2.20f\n",
+           (xru+xld)/2., (yru+yld)/2.);
+    return frames;
 }
 
-#else
-
-#define CHECK(x) {							    \
-    unsigned of = (unsigned) (unsigned long) &x[0];			    \
-    char soThatGccDoesntOptimizeAway[32];				    \
-    sprintf(soThatGccDoesntOptimizeAway, "%08x", of);			    \
-    if (soThatGccDoesntOptimizeAway[7] != '0') {			    \
-	fprintf(stderr,							    \
-	    "Your compiler is buggy... "				    \
-	    "it didn't align the SSE variables...\n"			    \
-	    "The application would crash. Aborting.\n");		    \
-	fflush(stderr);							    \
-	exit(1);							    \
-    }									    \
+void usage(char *argv[])
+{
+    printf("Usage: %s [-a] [-s|-x] [-h] [WIDTH HEIGHT]\n", argv[0]);
+    puts("Where:");
+    puts("\t-h\tShow this help message");
+    puts("\t-a\tRun in autopilot mode (default: mouse mode)");
+    puts("\t-s\tUse SSE and OpenMP");
+    puts("\t-x\tUse XaoS algorithm (default)");
+    puts("If WIDTH and HEIGHT are not provided, they default to: 800 600");
+    exit(1);
 }
-
-#endif
 
 int main(int argc, char *argv[])
 {
-    DECLARE_ALIGNED(16,float,testAlignment[4]);
+    int i, bAutoPilot = 0, bSSE = 0;
 
-    CHECK(testAlignment)
-    CHECK(ones)
-    CHECK(onesf)
-    CHECK(fours)
-    CHECK(foursf)
-    CHECK(allbits)
-
-    switch (argc) {
-    case 3:
-        MAXX = atoi(argv[1]);
-        MAXY = atoi(argv[2]);
-	MAXX = 16*(MAXX/16);
-	MAXY = 16*(MAXY/16);
-        break;
-    default:
-        MAXX = 480;
-        MAXY = 360;
-        break;
-    }
-
-#ifndef _WIN32
-    printf("\nMandelbrot Zoomer by Thanassis (an experiment in SSE).\n");
-#ifndef SIMD_SSE
-    printf("(Pipelined floating point calculation)\n\n");
-#else
-    printf("(SSE calculation)\n\n");
-#endif
-#endif
-
-    previewBufferOriginal = (Uint8 *) malloc(MAXX*MAXY/16);
-    previewBufferFiltered = (Uint8 *) malloc(MAXX*MAXY/16);
-    init256();
-
-    int x,y;
-    unsigned i=0, st, en;
-
-    const char *floats  ="Single-precision mode"
-#ifdef SIMD_SSE
-    " (SSE)"
-#endif
-    ;
-    const char *doubles ="Double-precision mode"
-#ifdef SIMD_SSE
-    " (SSE)"
-#endif
-    ;
-
-    const char *usage = "Left click to zoom-in, right-click to zoom-out, ESC to quit...";
-    SDL_WM_SetCaption(usage,usage);
-
-    st = SDL_GetTicks();
-
-    double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
-    int mode = 0;
-    while(1) {
-	preMandel(xld, yld, xru, yru);
-	if ((xru-xld)<0.00002) {
-	    if (mode != 1) { SDL_WM_SetCaption(doubles,doubles); mode = 1; }
-	    mandelDouble(xld, yld, xru, yru);
-	} else {
-	    if (mode != 0) { SDL_WM_SetCaption(floats,floats); mode = 0; }
-	    mandelFloat(xld, yld, xru, yru);
-	}
-        int result = kbhit(&x, &y);
-	if (result == 1)
+    for(i=1; i<argc; i++) {
+        if (!strcmp(argv[i], "-a"))
+            bAutoPilot = 1;
+        else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-?"))
+            usage(argv);
+        else if (!strcmp(argv[i], "-s"))
+            bSSE = 1;
+        else if (!strcmp(argv[i], "-x"))
+            bSSE = 0;
+        else
             break;
-	else if (result == 2 || result == 3) {
-	    double ratiox = ((double)x)/MAXX;
-	    double ratioy = ((double)y)/MAXY;
-	    double xrange = xru-xld;
-	    double yrange = yru-yld;
-	    double direction = result==2?1.:-1.;
-	    xld += direction*0.01*ratiox*xrange;
-	    xru -= direction*0.01*(1.-ratiox)*xrange;
-	    yld += direction*0.01*(1.-ratioy)*yrange;
-	    yru -= direction*0.01*ratioy*yrange;
-	} 
-	i++;
     }
+    if (i == argc) {
+        MAXX = 800;
+        MAXY = 600;
+    } else if (i == argc-2) {
+        MAXX = atoi(argv[i]);
+        MAXY = atoi(argv[i+1]);
+        if (!MAXX || !MAXY) {
+            panic(
+                "[x] Failed to parse integer values "
+                "for WIDTH(%s) and HEIGHT(%s)\n", argv[i], argv[i+1]);
+        }
+        MAXX = 16*(MAXX/16);
+        MAXY = 16*(MAXY/16);
+    } else
+        usage(argv);
+
+    printf("\n[-] Mandelbrot Zoomer by Thanassis.\n");
+    if (!bAutoPilot)
+        puts("[-] Note you can launch with option '-a' to enable autopilot.");
+
+    init256(bSSE);
+
+    const char *usage =
+        "Left click to zoom-in, right-click to zoom-out, ESC to quit...";
+    SDL_WM_SetCaption(usage, usage);
+
+    extern int mandelSSE(int);
+    if (bSSE)
+        return mandelSSE(bAutoPilot);
+
+    unsigned en, st = SDL_GetTicks();
+    unsigned frames;
+    if (bAutoPilot)
+        frames = autopilot();
+    else
+        frames = mousedriven();
     en = SDL_GetTicks();
 
-#ifdef _WIN32
-    char speed[256];
-    sprintf(speed, "Frames/sec:%5.2f\n\n", ((float) i) / ((en - st) / 1000.0f));
-    MessageBoxA(0, (LPCSTR) speed, (const char *)"Speed of rendering", MB_OK);
-#else
-    printf("Frames/sec:%5.2f\n\n", ((float) i) / ((en - st) / 1000.0f));
+    printf("[-] Frames/sec:%5.2f\n\n",
+           ((float) frames) / ((en - st) / 1000.0f));
     fflush(stdout);
-#endif
     return 0;
 }

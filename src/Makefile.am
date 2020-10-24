@@ -1,6 +1,6 @@
 noinst_PROGRAMS = mandelSSE
 
-mandelSSE_SOURCES = mandel.c
+mandelSSE_SOURCES = mandel.c sse.c
 
 mandelSSE_CPPFLAGS = @SDL_CFLAGS@
 

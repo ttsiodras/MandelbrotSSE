@@ -1,66 +1,77 @@
-**Note**: *I wrote a detailed blog post about this [here](https://www.thanassis.space/mandelSSE.html).*
-
 WHAT IS THIS?
 =============
 
-When I got my hands on an SSE enabled processor (an Athlon-XP, back in 2002), 
-I wanted to try out SSE programming... Over the better part of a weekend,
-I created a simple implementation of a Mandelbrot zoomer in native SSE 
-assembly, and was glad to find that it was almost 3 times faster than pure C.
+When I got my hands on an SSE enabled processor (an Athlon-XP, back in 2002),
+I wanted to try out SSE programming... And over the better part of a weekend,
+I created a simple implementation of a Mandelbrot zoomer in SSE assembly.
+I was glad to see that my code was almost 3 times faster than pure C.
 
-Since then, I also enriched the code so it uses the GNU autotools - it 
-should now work on most Intel platforms: I've checked it on x86-Linux, 
-x86-Windows (MinGW) and amd64-OpenBSD.
+But that was just the beginning.
+Over the last two decades, I kept coming back to this, enhancing it.
 
-The source is available under the GNU license (read COPYING for details).
+- I learned how to use the GNU autotools, and made it work on most Intel
+  platforms: checked with Linux, Windows (MinGW) and OpenBSD.
 
-UPDATE, Nov 2009:
------------------
+- After getting acquainted with OpenMP, in Nov 2009 I added OpenMP #pragmas
+  to run both the C and the SSE code in all cores/CPUs. The SSE code had to
+  be moved from a separate assembly file into inlined code - but the effort
+  was worth it. The resulting frame rate - on a tiny Atom 330 running Arch
+  Linux - sped up from 58 to 160 frames per second.
 
-Now that I've learned how to use OpenMP, I am also using OpenMP #pragmas to run 
-both the C and the SSE code in all cores/CPUs. The SSE code had to be inlined
-of course - but it was worth it: the resulting frame rate - using Arch Linux 
-on my Atom 330 - jumped from 58 to 160 frames per second.
+- I then coded it in CUDA - a 75$ GPU card gave almost two orders of
+  magnitude of speedup!
 
-UPDATE, May 2011:
------------------
+- Then in May 2011, I made the code switch automatically from single precision
+  floating point to double precision - when one zooms "deep enough".
 
-And since single precision floating point allows for "shallow" dives only,
-the renderer switches to double precision when you zoom deep enough...
+- Around 2012 I added a significant optimization: avoiding fully calculating
+  the Mandelbrot lake areas (black color) by drawing at 1/16 resolution and
+  skipping black areas in full res...
 
-Also added a significant optimization: avoid calculating black areas by
-doing a drawing at 1/16 resolution and skipping black areas in full res...
+- I learned enough VHDL in 2018 to [code the algorithm inside a Spartan3
+  FPGA](https://www.youtube.com/watch?v=yFIbjiOWYFY). That was quite a
+  [learning exercise](https://github.com/ttsiodras/MandelbrotInVHDL).
 
-UPDATE, October 2020:
----------------------
+- In September 2020 I [ported a fixed-point arithmetic](
+  https://github.com/ttsiodras/Blue_Pill_Mandelbrot/) version of the
+  algorithm [inside a 1.4$ microcontroller](
+  https://www.youtube.com/watch?v=5875JOnFDLg).
 
-After [porting a fixed-point arithmetic version of this to a 1.4$
-microcontroller](https://www.youtube.com/watch?v=5875JOnFDLg), I got 
-interested in doing algorithmic optimizations. The "XaoS" branch
-of the repository demonstrates the awesome power of a better algorithm...
-Ihe code [is of course far more
-complex](https://github.com/ttsiodras/MandelbrotSSE/blob/XaoS/src/mandel.c#L156)
-but the end result speaks for itself: Even in deep-dives, by optimally
-reusing the pixels drawn in the previous frame, we get amazing speeds - even
-with large windows.
+- And finally (?), in October 2020, I implemented what I understood to be
+  the XaoS algorithm - that is, re-using pixels from the previous frame
+  to optimally update the next one. Especially in deep-dives and large
+  windows, this delivers amazing speedups.
 
 COMPILE/INSTALL/RUN
 ===================
 
-    ./configure
-    make
-    src/mandelSSE 
-    
-Use the mouse: left-click to zoom-in, right-click to zoom out.
-Window size is set by default at 480x360. To use a different size:
+    $ ./configure
+    $ make
+    $ src/mandelSSE -h
 
-    src/mandelSSE 800 600
+    Usage: ./src/mandelSSE [-a] [-s|-x] [-h] [WIDTH HEIGHT]
+    Where:
+        -h      Show this help message
+        -a      Run in autopilot mode (default: mouse mode)
+        -s      Use SSE and OpenMP
+        -x      Use XaoS algorithm (default)
+    If WIDTH and HEIGHT are not provided, they default to: 800 600
 
-If you are benchmarking your CPU however, you must stick to small sizes,
-otherwise you are benchmarking your graphics card instead of your CPU.
+    $ src/mandelSSE -a 1024 768
+    (Runs in autopilot in 1024x768 window, using XaoS)
+
+    $ src/mandelSSE -s 1024 768
+    (Runs in mouse-driven SSE mode, in a 1024x768 window)
+    (left-click zooms-in, right-click zooms out)
+
+    $ src/mandelSSE -x 1024 768
+    (same as before, but in XaoS mode - much faster, esp during deep zooms)
 
 CODERS ONLY
 ===========
+
+SSE code
+--------
 
 This is the main loop (brace yourselves):
 
@@ -100,11 +111,47 @@ This is the main loop (brace yourselves):
         inc     ecx
         cmp     ecx, 119
         jnz     short loop1
-  
-COMMENTS
-========
-Since it reports frame rate at the end, you can use it as a benchmark 
-for SSE instructions - it puts the SSE registers under quite a load. 
 
-I've also coded a CUDA version, if you have an NVIDIA card;
-see the detailed blog post I wrote about it [here](https://www.thanassis.space/mandelSSE.html).
+XaoS
+----
+
+The idea behind the XaoS algorithm is simple: don't redraw the pixels;
+instead re-use as many as you can from the previous frame.
+
+The devil, as ever, is in the details.
+
+The way I implemented this is as follows: the topmost scaline goes
+from X coordinate `xld` to `xru` - in `xstep` steps (see code
+for details). I store these computed coordinates in array `xcoord`;
+and in the next frame, I compare the new coordinates with the old 
+ones. For each pixel, I basically find the closest X coordinate match.
+
+I do the same for the Y coordinates. In both cases, we are talking
+about a 1-dimensional array, of MAXX or MAXY length.
+
+After I have the matches, I sort them - based on distance to the
+coordinates of the previous frame. The `mandel` function then forces
+a redraw for the worst N columns/rows - where N comes as a percentage
+parameter in the function call. Simply put, if the pixel's
+X and Y coordinates fall on "slots" that are close enough to the
+old frame's `xcoord` and `ycoord`, the pixel color is taken
+from the previous frame without doing the expensive Mandelbrot
+calculation.
+
+This works perfectly - the zoom becomes nice and smooth, and is
+also improved with a full Mandelbrot render the moment the user
+stops zoooming.
+
+The code has a lot of comments explaining the inner-workings in detail.
+Have a look!
+
+MISC
+====
+Since it reports frame rate at the end, you can use this as a benchmark
+for SSE instructions - it puts the SSE registers under quite a load.
+
+I've also coded a
+[CUDA version](https://www.thanassis.space/mandelcuda-1.0.tar.bz2),
+which you can play with, if you have an NVIDIA card.
+Some details about it, in the blog post I wrote back in 2009 about
+it [here](https://www.thanassis.space/mandelSSE.html).
