@@ -9,8 +9,8 @@
 // Number of iterations per pixel
 #define ITERA 240
 
-extern int MAXX;
-extern int MAXY;
+extern long MAXX;
+extern long MAXY;
 extern SDL_Surface *surface;
 extern Uint8 *buffer;
 
@@ -435,18 +435,18 @@ void mandelDouble(double xld, double yld, double xru, double yru)
     #endif
 }
 
-#define CHECK(x) {							    \
-    unsigned of = (unsigned) (unsigned long) &x[0];			    \
-    char soThatGccDoesntOptimizeAway[32];				    \
-    sprintf(soThatGccDoesntOptimizeAway, "%08x", of);			    \
-    if (soThatGccDoesntOptimizeAway[7] != '0') {			    \
-	fprintf(stderr,							    \
-	    "Your compiler is buggy... "				    \
-	    "it didn't align the SSE variables...\n"			    \
-	    "The application would crash. Aborting.\n");		    \
-	fflush(stderr);							    \
-	exit(1);							    \
-    }									    \
+#define CHECK(x) {						\
+    unsigned long of = (unsigned long) &x[0];			\
+    char so[32];				    		\
+    sprintf(so, "%lx", of);			    		\
+    if (so[strlen(so)-1] != '0') {			    	\
+	fprintf(stderr,						\
+	    "Your compiler is buggy... "			\
+	    "it didn't align the SSE variables...\n"		\
+	    "The application would crash. Aborting.\n");	\
+	fflush(stderr);						\
+	exit(1);						\
+    }								\
 }
 
 int mandelSSE(int bAutoPilot)

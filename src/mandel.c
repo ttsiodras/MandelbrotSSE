@@ -16,7 +16,7 @@
 // The globals:
 
 // Window dimensions
-int MAXX, MAXY;
+long MAXX, MAXY;
 
 // SDL surface we draw in
 SDL_Surface *surface;
@@ -191,12 +191,16 @@ void mandel(
         for (i=0; i<2; i++) {
             xcoords[i] = malloc(MAXX*sizeof(double));
             ycoords[i] = malloc(MAXY*sizeof(double));
+	    if (!xcoords[i] || !ycoords[i])
+	       panic("Out of memory");
             memset(xcoords[i], 0, MAXX*sizeof(double));
             memset(ycoords[i], 0, MAXY*sizeof(double));
 
             // We also need two screen buffers - one to draw in,
             // and one with the old frame.
             bufferMem[i] = malloc(MAXX*MAXY);
+	    if (!bufferMem[i])
+	       panic("Out of memory");
         }
 
         // In this frame, we will compute a lookup for each X and Y;
@@ -205,11 +209,15 @@ void mandel(
         // Otherwise, it will be an index into the "close enough" pixel.
         xlookup = malloc(MAXX*sizeof(int));
         ylookup = malloc(MAXY*sizeof(int));
+        if (!xlookup || !ylookup)
+           panic("Out of memory");
 
         // To determine the pixels whose coordinates are close enough to
         // those of the previous frame, MAXX slots will suffice;
         // for both X and Y directions, since MAXX > MAXY.
         points = malloc(MAXX*sizeof(Point));
+	if (!points)
+           panic("Out of memory");
     }
 
     // Move to the next buffer
