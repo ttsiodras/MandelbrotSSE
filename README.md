@@ -1,3 +1,13 @@
+FOR THE IMPATIENT WINDOWS USER
+==============================
+
+You can download and run a pre-compiled version for Windows
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/1.2a/mandelSSE-win32-1.2a.zip).
+
+Just execute either one of the two .bat files - the 'autopilot' one zooms
+in a specific location, the other one allows you to zoom interactively
+using your mouse (left-click zooms in, right-click zooms out).
+
 WHAT IS THIS?
 =============
 
