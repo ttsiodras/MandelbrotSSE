@@ -9,7 +9,7 @@ COMPILE/INSTALL/RUN
 Windows
 -------
 Windows users can download and run a pre-compiled Windows binary
-[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/1.2a/mandelSSE-win32-1.2a.zip).
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/1.2c/mandelSSE-win32-1.2c.zip).
 
 After decompressing, you can simply execute either one of the two .bat
 files. The 'autopilot' one zooms in a specific location, while the other
@@ -188,8 +188,7 @@ Finally, come back to this source folder, and compile the XaoS
 version:
 
     $ ./configure --host=x86_64-w64-mingw32 \
-            --disable-sse --disable-openmp --disable-sse2 \
-            --disable-ssse3 \
+            --disable-sse --disable-sse2 --disable-ssse3 \
             --with-sdl-prefix=/usr/local/packages/SDL-1.2.15-win32 \
             --disable-sdltest
     $ make

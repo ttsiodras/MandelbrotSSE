@@ -26,18 +26,18 @@ AC_ARG_ENABLE(openmp,
 
 AC_ARG_ENABLE(sse, 
     [AS_HELP_STRING([--enable-sse],[Force use of SSE])], 
-    [enable_openmp="$enableval"], 
-    [enable_openmp="yes"])
+    [enable_sse="$enableval"], 
+    [enable_sse="yes"])
 
 AC_ARG_ENABLE(sse2, 
     [AS_HELP_STRING([--enable-sse2],[Force use of SSE2])], 
-    [enable_openmp="$enableval"], 
-    [enable_openmp="yes"])
+    [enable_sse2="$enableval"], 
+    [enable_sse2="yes"])
 
 AC_ARG_ENABLE(ssse3, 
     [AS_HELP_STRING([--enable-ssse3],[Force use of SSSE3])], 
-    [enable_openmp="$enableval"], 
-    [enable_openmp="yes"])
+    [enable_ssse3="$enableval"], 
+    [enable_ssse3="yes"])
 
 AC_ARG_ENABLE(debug, 
     [AS_HELP_STRING([--enable-debug],[Compile in debug mode])], 

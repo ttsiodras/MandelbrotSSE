@@ -309,13 +309,13 @@ void mandel(
     }
 
     // Armed now with the xlookup and ylookup, we can render the frame.
-    // Set the output pointer to the proper buffer
-    unsigned char *p = &bufferMem[bufIdx][0];
-
-    // ...and start descending scanlines, from yru down to yld,
-    // one ystep at a time.
-    ycur = yru;
-    for (i=0; i<MAXY; i++) {
+#pragma omp parallel for private(xcur, j)
+    for (int i=0; i<MAXY; i++) {
+        // ...and start descending scanlines, from yru down to yld,
+        // one ystep at a time.
+        double ycur = yru - i*ystep;
+        // Set the output pointer to the proper buffer
+        unsigned char *p = &bufferMem[bufIdx][i*MAXX];
         int yclose = ylookup[i];
         // Start moving from xld to xru, one xstep at a time
         xcur = xld;
@@ -354,7 +354,6 @@ void mandel(
             }
             xcur += xstep;
         }
-        ycur -= ystep;
     }
     // Copy the memory-based buffer into the SDL one...
     memcpy(buffer, bufferMem[bufIdx], MAXX*MAXY);
