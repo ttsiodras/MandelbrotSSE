@@ -1,15 +1,53 @@
-FOR THE IMPATIENT WINDOWS USER
-==============================
-
-You can download and run a pre-compiled version for Windows
-[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/1.2a/mandelSSE-win32-1.2a.zip).
-
-Just execute either one of the two .bat files - the 'autopilot' one zooms
-in a specific location, the other one allows you to zoom interactively
-using your mouse (left-click zooms in, right-click zooms out).
-
 WHAT IS THIS?
 =============
+
+This is a real-time Mandelbrot fractal zoomer.
+
+COMPILE/INSTALL/RUN
+===================
+
+Windows
+-------
+Windows users can download and run a pre-compiled Windows binary
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/1.2a/mandelSSE-win32-1.2a.zip).
+
+After decompressing, you can simply execute either one of the two .bat
+files. The 'autopilot' one zooms in a specific location, while the other
+one allows you to zoom interactively using your mouse (left-click zooms in,
+right-click zooms out).
+
+For Linux/BSD/OSX users
+-----------------------
+
+Make sure you have libSDL installed - then...
+
+    $ ./configure
+    $ make
+
+You can then simply...
+
+    $ src/mandelSSE -h
+
+    Usage: ./src/mandelSSE [-a] [-s|-x] [-h] [WIDTH HEIGHT]
+    Where:
+        -h      Show this help message
+        -a      Run in autopilot mode (default: mouse mode)
+        -s      Use SSE and OpenMP
+        -x      Use XaoS algorithm (default)
+    If WIDTH and HEIGHT are not provided, they default to: 800 600
+
+    $ src/mandelSSE -a 1024 768
+    (Runs in autopilot in 1024x768 window, using XaoS)
+
+    $ src/mandelSSE -s 1024 768
+    (Runs in mouse-driven SSE mode, in a 1024x768 window)
+    (left-click zooms-in, right-click zooms out)
+
+    $ src/mandelSSE -x 1024 768
+    (same as before, but in XaoS mode - much faster, esp during deep zooms)
+
+WHAT IS THIS, AGAIN?
+====================
 
 When I got my hands on an SSE enabled processor (an Athlon-XP, back in 2002),
 I wanted to try out SSE programming... And over the better part of a weekend,
@@ -51,31 +89,6 @@ Over the last two decades, I kept coming back to this, enhancing it.
   the XaoS algorithm - that is, re-using pixels from the previous frame
   to optimally update the next one. Especially in deep-dives and large
   windows, this delivers amazing speedups.
-
-COMPILE/INSTALL/RUN
-===================
-
-    $ ./configure
-    $ make
-    $ src/mandelSSE -h
-
-    Usage: ./src/mandelSSE [-a] [-s|-x] [-h] [WIDTH HEIGHT]
-    Where:
-        -h      Show this help message
-        -a      Run in autopilot mode (default: mouse mode)
-        -s      Use SSE and OpenMP
-        -x      Use XaoS algorithm (default)
-    If WIDTH and HEIGHT are not provided, they default to: 800 600
-
-    $ src/mandelSSE -a 1024 768
-    (Runs in autopilot in 1024x768 window, using XaoS)
-
-    $ src/mandelSSE -s 1024 768
-    (Runs in mouse-driven SSE mode, in a 1024x768 window)
-    (left-click zooms-in, right-click zooms out)
-
-    $ src/mandelSSE -x 1024 768
-    (same as before, but in XaoS mode - much faster, esp during deep zooms)
 
 CODERS ONLY
 ===========
@@ -154,6 +167,39 @@ stops zoooming.
 
 The code has a lot of comments explaining the inner-workings in detail.
 Have a look!
+
+Cross compiling for Windows via MinGW
+-------------------------------------
+After decompressing the SDL 1.2.15 tarball, install MinGW:
+
+    $ sudo apt install gcc-mingw-w64
+
+Then compile libSDL:
+
+    $ cd SDL-1.2.15
+    $ ./configure --host=x86_64-w64-mingw32 --disable-dga \
+            --disable-video-dga --disable-video-x11-dgamouse \
+            --disable-video-x11 --disable-x11-shared \
+            --prefix=/usr/local/packages/SDL-1.2.15-win32
+    $ make
+    $ sudo make install
+
+Finally, come back to this source folder, and compile the XaoS
+version:
+
+    $ ./configure --host=x86_64-w64-mingw32 \
+            --disable-sse --disable-openmp --disable-sse2 \
+            --disable-ssse3 \
+            --with-sdl-prefix=/usr/local/packages/SDL-1.2.15-win32 \
+            --disable-sdltest
+    $ make
+    $ cp src/mandelSSE.exe \
+            /usr/local/packages/SDL-1.2.15-win32/bin/SDL.dll \
+            /some/path/for/Windows/
+
+This will suffice for "-x" (XaoS) execution; if you want SSE/OpenMP,
+turn the --disable above into --enable... and remember to copy the
+libgomp DLL, too.
 
 MISC
 ====
