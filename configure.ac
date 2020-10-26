@@ -24,6 +24,21 @@ AC_ARG_ENABLE(openmp,
     [enable_openmp="$enableval"], 
     [enable_openmp="yes"])
 
+AC_ARG_ENABLE(sse, 
+    [AS_HELP_STRING([--enable-sse],[Force use of SSE])], 
+    [enable_openmp="$enableval"], 
+    [enable_openmp="yes"])
+
+AC_ARG_ENABLE(sse2, 
+    [AS_HELP_STRING([--enable-sse2],[Force use of SSE2])], 
+    [enable_openmp="$enableval"], 
+    [enable_openmp="yes"])
+
+AC_ARG_ENABLE(ssse3, 
+    [AS_HELP_STRING([--enable-ssse3],[Force use of SSSE3])], 
+    [enable_openmp="$enableval"], 
+    [enable_openmp="yes"])
+
 AC_ARG_ENABLE(debug, 
     [AS_HELP_STRING([--enable-debug],[Compile in debug mode])], 
     [enable_debug="$enableval"], 
@@ -50,40 +65,56 @@ else
 	# SIMD detection - core logic from mplayer
 
 	AC_MSG_CHECKING(for SSE)
-	AC_RUN_IFELSE([AC_LANG_SOURCE([#include <stdlib.h>
+        if test x"${enable_sse}" = x ; then
+            AC_RUN_IFELSE([AC_LANG_SOURCE([#include <stdlib.h>
 #include <signal.h>
 void catchme(int a) { exit(1); }
 int main(void) {
 signal(SIGILL, catchme);
 __asm__ volatile ("xorps %%xmm0, %%xmm0":::"memory"); return 0;
 }
-	])], [HAVESSE=yes], [HAVESSE=no])
-	AC_MSG_RESULT($HAVESSE)
-	if test x"${HAVESSE}" = xyes ; then
-	    AC_DEFINE([SIMD_SSE], 1, [Define this to use SSE intrinsics.])
-	fi
+            ])], [HAVESSE=yes], [HAVESSE=no])
+            AC_MSG_RESULT($HAVESSE)
+            if test x"${HAVESSE}" = xyes ; then
+                AC_DEFINE([SIMD_SSE], 1, [Define this to use SSE intrinsics.])
+            fi
+        else
+            HAVESSE=${enable_sse} # forced
+            AC_MSG_RESULT($HAVESSE)
+            AC_DEFINE([SIMD_SSE], 1, [Define this to use SSE intrinsics.])
+        fi
 
 	AC_MSG_CHECKING(for SSE2)
-	AC_RUN_IFELSE([AC_LANG_SOURCE([#include <stdlib.h>
+        if test x"${enable_sse2}" = x ; then
+            AC_RUN_IFELSE([AC_LANG_SOURCE([#include <stdlib.h>
 #include <signal.h>
 void catchme(int a) { exit(1); }
 int main(void) {
 signal(SIGILL, catchme);
 __asm__ volatile ("xorpd %%xmm0, %%xmm0":::"memory"); return 0;
 }
-	])], [HAVESSE2=yes], [HAVESSE2=no])
-	AC_MSG_RESULT($HAVESSE2)
+            ])], [HAVESSE2=yes], [HAVESSE2=no])
+            AC_MSG_RESULT($HAVESSE2)
+        else
+            HAVESSE2=${enable_sse2} # forced
+            AC_MSG_RESULT($HAVESSE2)
+        fi
 
 	AC_MSG_CHECKING(for SSSE3)
-	AC_RUN_IFELSE([AC_LANG_SOURCE([#include <stdlib.h>
+        if test x"${enable_ssse3}" = x ; then
+            AC_RUN_IFELSE([AC_LANG_SOURCE([#include <stdlib.h>
 #include <signal.h>
 void catchme(int a) { exit(1); }
 int main(void) {
 signal(SIGILL, catchme);
 __asm__ volatile ("pabsd %%xmm0, %%xmm0":::"memory"); return 0;
 }
-	])], [HAVESSSE3=yes], [HAVESSSE3=no])
-	AC_MSG_RESULT($HAVESSSE3)
+            ])], [HAVESSSE3=yes], [HAVESSSE3=no])
+            AC_MSG_RESULT($HAVESSSE3)
+        else
+            HAVESSSE3=${enable_ssse3} # forced
+            AC_MSG_RESULT($HAVESSSE3)
+        fi
 
 	if test x"${HAVESSE}" = xyes ; then
 	    AX_CFLAGS_GCC_OPTION(-msse)
@@ -102,8 +133,9 @@ fi
 AM_PROG_CC_C_O
 
 AC_CHECK_FUNCS([atexit])
+AC_CHECK_FUNCS([memset])
 AC_CHECK_HEADERS([stdlib.h string.h])
-AC_FUNC_MALLOC
+#AC_FUNC_MALLOC
 AC_FUNC_VPRINTF
 AC_HEADER_STDC
 

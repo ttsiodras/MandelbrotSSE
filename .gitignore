@@ -10,3 +10,4 @@ src/stamp-h1
 autom4te.cache/
 src/config.h.in~
 src/mandelSSE-sse.o
+src/*.exe
