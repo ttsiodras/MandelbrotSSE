@@ -132,7 +132,12 @@ typedef struct tagPoint {
 // Sorting function for quicksort.
 int compare_points(const void *p1, const void *p2)
 {
-    return ((Point*)p1)->distance < ((Point*)p2)->distance;
+    double d1 = ((Point*)p1)->distance;
+    double d2 = ((Point*)p2)->distance;
+    return \
+        (d2 < d1) ? -1 :
+        (d2 > d1) ?  1 :
+        0;
 }
 
 void mandel(
