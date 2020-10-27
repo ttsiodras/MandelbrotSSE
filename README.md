@@ -9,7 +9,7 @@ COMPILE/INSTALL/RUN
 Windows
 -------
 Windows users can download and run a pre-compiled Windows binary
-[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/1.2c/mandelSSE-win32-1.2c.zip).
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.0/mandelSSE-win32-2.0.zip).
 
 After decompressing, you can simply execute either one of the two .bat
 files. The 'autopilot' one zooms in a specific location, while the other

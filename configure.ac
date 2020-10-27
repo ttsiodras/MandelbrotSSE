@@ -1,4 +1,4 @@
-AC_INIT([mandelSSE], [1.2], [ttsiod@softlab.ntua.gr])
+AC_INIT([mandelSSE], [2.0], [ttsiod@softlab.ntua.gr])
 
 AC_LANG(C)
 AC_CONFIG_HEADERS([src/config.h])

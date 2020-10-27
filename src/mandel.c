@@ -331,7 +331,8 @@ void mandel(
                 double re, im;
                 double rez, imz;
                 double t1, t2, o1, o2;
-                int k;
+                double xold = 0., yold = 0.;
+                int k, period=0;
 
                 re = xcur;
                 im = ycur;
@@ -348,7 +349,16 @@ void mandel(
                     imz = t2 + im;
                     if (o1 + o2 > 4)
                         break;
+                    if (xold == rez && yold == imz) {
+                        k = ITERA;
+                        break;
+                    }
                     k++;
+                    if (period++ == 20) {
+                        period = 0;
+                        xold = rez;
+                        yold = imz;
+                    }
                 }
                 *p++ = k == ITERA ? 128 : k&127;
             }
