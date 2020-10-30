@@ -497,9 +497,9 @@ int mandelSSE(int bAutoPilot)
                 mandelFloat(xld, yld, xru, yru);
             }
             unsigned en = SDL_GetTicks();
-            if (en - st < 17)
+            if (en - st < MINIMUM_MS_PER_FRAME)
                 // Limit frame rate to 60 fps.
-                SDL_Delay(17 - en + st);
+                SDL_Delay(MINIMUM_MS_PER_FRAME - en + st);
         }
         int result = kbhit(&x, &y);
         if (result == 1)

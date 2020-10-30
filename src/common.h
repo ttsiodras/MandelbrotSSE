@@ -11,6 +11,9 @@
 // Number of frames to zoom-in
 #define ZOOM_FRAMES 2500
 
+// 60 fps maximum => minimum milliseconds per frame = 1000/60 = 17 
+#define MINIMUM_MS_PER_FRAME 17
+
 // The global variables.
 // Only one file defines GLOBAL (to nothing) before #include-ing this file.
 #ifndef GLOBAL
