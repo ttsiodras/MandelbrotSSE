@@ -347,7 +347,7 @@ void preMandel(double xld, double yld, double xru, double yru)
     Uint8 *pDst = previewBufferFiltered;
     for (i=0; i<MINI_MAXY; i++) {
         for (j=0; j<MINI_MAXX; j++) {
-	    Uint8 up=0,left=0,down=0,right=0;
+	    Uint8 up=128,left=128,down=128,right=128;
 	    if (i>0) up = *(pSrc-MINI_MAXX);
 	    if (i<MINI_MAXY-1) down = *(pSrc+MINI_MAXX);
 	    if (j>0) left = *(pSrc-1);
@@ -381,11 +381,11 @@ void mandelFloat(double xld, double yld, double xru, double yru)
 	p = &buffer[i*MAXX];
         for (j=0; j<MAXX; j+=4, offset++) {
 	    // Avoid calculating black areas - see comment in preMandel
-	    if (0 == previewBufferFiltered[offset]) {
-		*p++ = 0;
-		*p++ = 0;
-		*p++ = 0;
-		*p++ = 0;
+	    if (128 == previewBufferFiltered[offset]) {
+		*p++ = 128;
+		*p++ = 128;
+		*p++ = 128;
+		*p++ = 128;
 		xcur += 4*xstep;
 		#ifndef NDEBUG
 		saved ++;
@@ -424,11 +424,11 @@ void mandelDouble(double xld, double yld, double xru, double yru)
 	p = &buffer[i*MAXX];
         for (j=0; j<MAXX; j+=4, offset++) {
 	    // Avoid calculating black areas - see comment in preMandel
-	    if (0 == previewBufferFiltered[offset]) {
-		*p++ = 0;
-		*p++ = 0;
-		*p++ = 0;
-		*p++ = 0;
+	    if (128 == previewBufferFiltered[offset]) {
+		*p++ = 128;
+		*p++ = 128;
+		*p++ = 128;
+		*p++ = 128;
 		xcur += 4*xstep;
 		#ifndef NDEBUG
 		saved ++;
