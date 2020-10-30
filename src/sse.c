@@ -2,17 +2,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <SDL.h>
 
 #include "config.h"
-
-// Number of iterations per pixel
-#define ITERA 240
-
-extern long MAXX;
-extern long MAXY;
-extern SDL_Surface *surface;
-extern Uint8 *buffer;
+#include "common.h"
+#include "sse.h"
 
 static Uint8 *previewBufferOriginal = NULL;
 static Uint8 *previewBufferFiltered = NULL;
@@ -124,7 +117,7 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 					      // x' = x^2 - y^2 + a
 					      // y' = 2xy + b
 					      //
-    asm("mov    $0xEF,%%ecx\n\t"
+    asm("mov    %7,%%ecx\n\t"
 	"movaps %4,%%xmm5\n\t"                //  4.     4.     4.     4.       ; xmm5
 	"movaps %2,%%xmm6\n\t"                //  a0     a1     a2     a3       ; xmm6
 	"movaps %3,%%xmm7\n\t"                //  b0     b1     b2     b3       ; xmm7
@@ -158,7 +151,7 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 	"2:\n\t"
 	"movaps %%xmm3,%0\n\t"
 	:"=m"(outputs[0]),"=m"(outputs[2])
-	:"m"(re[0]),"m"(im[0]),"m"(foursf[0]),"m"(onesf[0]),"m"(allbits[0])
+	:"m"(re[0]),"m"(im[0]),"m"(foursf[0]),"m"(onesf[0]),"m"(allbits[0]),"i"(ITERA)
 	:"%eax","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","memory");
 
     k1[0] = (int)(outputs[0]);
@@ -235,7 +228,7 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 					      // x' = x^2 - y^2 + a
 					      // y' = 2xy + b
 					      //
-    asm("mov    $0xEF,%%ecx\n\t"
+    asm("mov    %6,%%ecx\n\t"
 	"movapd %3,%%xmm5\n\t"                //  4.     4.        ; xmm5
 	"movapd %1,%%xmm6\n\t"                //  a0     a1        ; xmm6
 	"movaps %2,%%xmm7\n\t"                //  b0     b1        ; xmm7
@@ -269,7 +262,7 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 	"2:\n\t"
 	"movapd %%xmm3,%0\n\t"
 	:"=m"(outputs[0])
-	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0])
+	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0]),"i"(ITERA)
 	:"%eax","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","memory");
 
     k1[0] = (int)(outputs[0]);
@@ -508,7 +501,6 @@ int mandelSSE(int bAutoPilot)
                 // Limit frame rate to 60 fps.
                 SDL_Delay(17 - en + st);
         }
-        extern int kbhit(int *xx, int *yy);
         int result = kbhit(&x, &y);
         if (result == 1)
             break;
@@ -531,7 +523,7 @@ int mandelSSE(int bAutoPilot)
             }
         }
 	i++;
-        if (bAutoPilot && i>1000)
+        if (bAutoPilot && i>2500)
             break;
     }
     en = SDL_GetTicks();

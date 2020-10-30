@@ -105,7 +105,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 am_mandelSSE_OBJECTS = mandelSSE-mandel.$(OBJEXT) \
-	mandelSSE-sse.$(OBJEXT)
+	mandelSSE-sse.$(OBJEXT) mandelSSE-xaos.$(OBJEXT) \
+	mandelSSE-common.$(OBJEXT)
 mandelSSE_OBJECTS = $(am_mandelSSE_OBJECTS)
 mandelSSE_DEPENDENCIES =
 AM_V_P = $(am__v_P_@AM_V@)
@@ -123,8 +124,9 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/mandelSSE-mandel.Po \
-	./$(DEPDIR)/mandelSSE-sse.Po
+am__depfiles_remade = ./$(DEPDIR)/mandelSSE-common.Po \
+	./$(DEPDIR)/mandelSSE-mandel.Po ./$(DEPDIR)/mandelSSE-sse.Po \
+	./$(DEPDIR)/mandelSSE-xaos.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -275,7 +277,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-mandelSSE_SOURCES = mandel.c sse.c
+mandelSSE_SOURCES = mandel.c sse.c xaos.c common.c
 mandelSSE_CPPFLAGS = @SDL_CFLAGS@
 mandelSSE_LDADD = @SDL_LIBS@ @OPENMP_LIBS@
 all: config.h
@@ -341,8 +343,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mandelSSE-common.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mandelSSE-mandel.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mandelSSE-sse.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mandelSSE-xaos.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -391,6 +395,34 @@ mandelSSE-sse.obj: sse.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sse.c' object='mandelSSE-sse.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mandelSSE_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mandelSSE-sse.obj `if test -f 'sse.c'; then $(CYGPATH_W) 'sse.c'; else $(CYGPATH_W) '$(srcdir)/sse.c'; fi`
+
+mandelSSE-xaos.o: xaos.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mandelSSE_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mandelSSE-xaos.o -MD -MP -MF $(DEPDIR)/mandelSSE-xaos.Tpo -c -o mandelSSE-xaos.o `test -f 'xaos.c' || echo '$(srcdir)/'`xaos.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mandelSSE-xaos.Tpo $(DEPDIR)/mandelSSE-xaos.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xaos.c' object='mandelSSE-xaos.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mandelSSE_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mandelSSE-xaos.o `test -f 'xaos.c' || echo '$(srcdir)/'`xaos.c
+
+mandelSSE-xaos.obj: xaos.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mandelSSE_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mandelSSE-xaos.obj -MD -MP -MF $(DEPDIR)/mandelSSE-xaos.Tpo -c -o mandelSSE-xaos.obj `if test -f 'xaos.c'; then $(CYGPATH_W) 'xaos.c'; else $(CYGPATH_W) '$(srcdir)/xaos.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mandelSSE-xaos.Tpo $(DEPDIR)/mandelSSE-xaos.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xaos.c' object='mandelSSE-xaos.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mandelSSE_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mandelSSE-xaos.obj `if test -f 'xaos.c'; then $(CYGPATH_W) 'xaos.c'; else $(CYGPATH_W) '$(srcdir)/xaos.c'; fi`
+
+mandelSSE-common.o: common.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mandelSSE_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mandelSSE-common.o -MD -MP -MF $(DEPDIR)/mandelSSE-common.Tpo -c -o mandelSSE-common.o `test -f 'common.c' || echo '$(srcdir)/'`common.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mandelSSE-common.Tpo $(DEPDIR)/mandelSSE-common.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='common.c' object='mandelSSE-common.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mandelSSE_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mandelSSE-common.o `test -f 'common.c' || echo '$(srcdir)/'`common.c
+
+mandelSSE-common.obj: common.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mandelSSE_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mandelSSE-common.obj -MD -MP -MF $(DEPDIR)/mandelSSE-common.Tpo -c -o mandelSSE-common.obj `if test -f 'common.c'; then $(CYGPATH_W) 'common.c'; else $(CYGPATH_W) '$(srcdir)/common.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mandelSSE-common.Tpo $(DEPDIR)/mandelSSE-common.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='common.c' object='mandelSSE-common.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mandelSSE_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mandelSSE-common.obj `if test -f 'common.c'; then $(CYGPATH_W) 'common.c'; else $(CYGPATH_W) '$(srcdir)/common.c'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -516,8 +548,10 @@ clean: clean-am
 clean-am: clean-generic clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/mandelSSE-mandel.Po
+		-rm -f ./$(DEPDIR)/mandelSSE-common.Po
+	-rm -f ./$(DEPDIR)/mandelSSE-mandel.Po
 	-rm -f ./$(DEPDIR)/mandelSSE-sse.Po
+	-rm -f ./$(DEPDIR)/mandelSSE-xaos.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -563,8 +597,10 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/mandelSSE-mandel.Po
+		-rm -f ./$(DEPDIR)/mandelSSE-common.Po
+	-rm -f ./$(DEPDIR)/mandelSSE-mandel.Po
 	-rm -f ./$(DEPDIR)/mandelSSE-sse.Po
+	-rm -f ./$(DEPDIR)/mandelSSE-xaos.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
