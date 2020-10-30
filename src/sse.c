@@ -105,7 +105,7 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 		k1[3] = k;
 	}
 
-	if (k1[0]*k1[1]*k1[2]*k1[3])
+	if (k1[0]*k1[1]*k1[2]*k1[3] != 0)
 	    break;
 
 	k++;
@@ -227,10 +227,10 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 	    if (o1 + o2 > 4)
 		k1[1] = k;
             if (rez[1] == xold[1] && imz[1] == yold[1])
-		k1[1] = ITERA;
+	        k1[1] = ITERA;
 	}
 	
-	if (k1[0]*k1[1])
+	if (k1[0]*k1[1] != 0)
 	    break;
 
 	k++;
