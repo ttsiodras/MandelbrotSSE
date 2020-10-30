@@ -214,7 +214,7 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 	    if (o1 + o2 > 4)
 		k1[0] = k;
             if (rez[0] == xold[0] && imz[0] == yold[0])
-		k1[0] = ITERA;
+                k1[0] = ITERA;
 	}
 
 	if (!k1[1]) {
