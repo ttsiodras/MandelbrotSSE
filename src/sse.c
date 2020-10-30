@@ -35,8 +35,10 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 #ifndef SIMD_SSE
     DECLARE_ALIGNED(16,float,rez[4]);
     DECLARE_ALIGNED(16,float,imz[4]);
+    DECLARE_ALIGNED(16,float,xold[4]);
+    DECLARE_ALIGNED(16,float,yold[4]);
     float t1, t2, o1, o2;
-    int k;
+    int k, period=0;
 #else
     DECLARE_ALIGNED(16,float,outputs[4]);
 #endif
@@ -57,6 +59,14 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
     imz[1] = 0.0f;
     imz[2] = 0.0f;
     imz[3] = 0.0f;
+    xold[0] = 0.0f;
+    xold[1] = 0.0f;
+    xold[2] = 0.0f;
+    xold[3] = 0.0f;
+    yold[0] = 0.0f;
+    yold[1] = 0.0f;
+    yold[2] = 0.0f;
+    yold[3] = 0.0f;
 
     k1[0] = k1[1] = k1[2] = k1[3] = 0;
     k = 1;
@@ -70,6 +80,8 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 	    imz[0] = t2 + im[0];
 	    if (o1 + o2 > 4)
 		k1[0] = k;
+            if (rez[0] == xold[0] && imz[0] == yold[0])
+                k1[0] = ITERA;
 	}
 
 	if (!k1[1]) {
@@ -81,6 +93,8 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 	    imz[1] = t2 + im[1];
 	    if (o1 + o2 > 4)
 		k1[1] = k;
+            if (rez[1] == xold[1] && imz[1] == yold[1])
+                k1[1] = ITERA;
 	}
 	
 	if (!k1[2]) {
@@ -92,6 +106,8 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 	    imz[2] = t2 + im[2];		    
 	    if (o1 + o2 > 4)
 		k1[2] = k;
+            if (rez[2] == xold[2] && imz[2] == yold[2])
+                k1[2] = ITERA;
 	}
 	
 	if (!k1[3]) {
@@ -103,13 +119,32 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 	    imz[3] = t2 + im[3];
 	    if (o1 + o2 > 4)
 		k1[3] = k;
+            if (rez[3] == xold[3] && imz[3] == yold[3])
+                k1[3] = ITERA;
 	}
 
 	if (k1[0]*k1[1]*k1[2]*k1[3] != 0)
 	    break;
 
 	k++;
+
+        period = (period+1) & 0xF;
+        if (period == 0xF) {
+            xold[0] = rez[0];
+            yold[0] = imz[0];
+            xold[1] = rez[1];
+            yold[1] = imz[1];
+            xold[2] = rez[2];
+            yold[2] = imz[2];
+            xold[3] = rez[3];
+            yold[3] = imz[3];
+        }
     }
+    if (!k1[0]) k1[0] = ITERA;
+    if (!k1[1]) k1[1] = ITERA;
+    if (!k1[2]) k1[2] = ITERA;
+    if (!k1[3]) k1[3] = ITERA;
+
     *(*p)++ = k1[0] == ITERA ? 128 : k1[0] & 127;
     *(*p)++ = k1[1] == ITERA ? 128 : k1[1] & 127;
     *(*p)++ = k1[2] == ITERA ? 128 : k1[2] & 127;
