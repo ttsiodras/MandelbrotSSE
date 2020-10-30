@@ -8,6 +8,9 @@
 // Number of Mandelbrot iterations per pixel
 #define ITERA 2048
 
+// Number of frames to zoom-in
+#define ZOOM_FRAMES 2500
+
 // The global variables.
 // Only one file defines GLOBAL (to nothing) before #include-ing this file.
 #ifndef GLOBAL

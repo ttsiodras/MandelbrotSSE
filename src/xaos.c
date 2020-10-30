@@ -262,7 +262,7 @@ int autopilot()
         targetx = -0.72996052273553402312, targety = -0.24047620199671820851;
     // targetx = -0.73162092639301889996, targety = -0.25655927868100719680;
 
-    while(i<2500) {
+    while(i<ZOOM_FRAMES) {
         unsigned st = SDL_GetTicks();
         mandel(xld, yld, xru, yru, 0.75); // Re-use 99.25% of the pixels.
         unsigned en = SDL_GetTicks();

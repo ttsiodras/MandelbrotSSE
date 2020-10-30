@@ -523,7 +523,7 @@ int mandelSSE(int bAutoPilot)
             }
         }
 	i++;
-        if (bAutoPilot && i>2500)
+        if (bAutoPilot && i>ZOOM_FRAMES)
             break;
     }
     en = SDL_GetTicks();
