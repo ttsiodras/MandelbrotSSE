@@ -243,6 +243,8 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
             yold[1] = imz[1];
         }
     }
+    if (!k1[0]) k1[0] = ITERA;
+    if (!k1[1]) k1[1] = ITERA;
 
     *(*p)++ = k1[0] == ITERA ? 128 : k1[0] & 127;
     *(*p)++ = k1[1] == ITERA ? 128 : k1[1] & 127;
