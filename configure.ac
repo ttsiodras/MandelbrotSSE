@@ -46,11 +46,8 @@ AC_ARG_ENABLE(debug,
 
 AX_CFLAGS_GCC_OPTION(-Wall)
 AX_CFLAGS_GCC_OPTION(-Wextra)
+
 # Best optimization flags for our compiler
-if test x"${enable_debug}" = xyes ; then
-	AC_MSG_NOTICE([Disabling optimizations])
-	CFLAGS=`echo "$CFLAGS" | sed 's,-O3,,g'`
-else
 #        AX_CFLAGS_GCC_OPTION(-pedantic)
         AX_CFLAGS_GCC_OPTION(-fomit-frame-pointer)
         AX_CFLAGS_GCC_OPTION(-ffast-math)
@@ -130,7 +127,6 @@ __asm__ volatile ("pabsd %%xmm0, %%xmm0":::"memory"); return 0;
 	    AX_CFLAGS_GCC_OPTION(-mssse3)
 	fi
         CFLAGS="$CFLAGS -DNDEBUG"
-fi
 
 AM_PROG_CC_C_O
 
@@ -152,6 +148,13 @@ if test x"${enable_openmp}" = xyes ; then
 else
     AC_MSG_NOTICE([Instructed to disable OpenMP. Disabled...])
 fi
+
+if test x"${enable_debug}" = xyes ; then
+    AC_MSG_NOTICE([Disabling optimizations])
+    CFLAGS=`echo "$CFLAGS" | sed 's,-O3,,g'`
+    HAVE_OPENMP=no
+fi
+
 if test x"${HAVE_OPENMP}" = xyes ; then
     OPENMP_LIBS=${OPENMP_CFLAGS}
 fi

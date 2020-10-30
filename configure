@@ -4167,12 +4167,8 @@ case ".$var" in
  ;;
 esac
 
+
 # Best optimization flags for our compiler
-if test x"${enable_debug}" = xyes ; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: Disabling optimizations" >&5
-$as_echo "$as_me: Disabling optimizations" >&6;}
-	CFLAGS=`echo "$CFLAGS" | sed 's,-O3,,g'`
-else
 #        AX_CFLAGS_GCC_OPTION(-pedantic)
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking CFLAGS for gcc -fomit-frame-pointer" >&5
 $as_echo_n "checking CFLAGS for gcc -fomit-frame-pointer... " >&6; }
@@ -4886,7 +4882,6 @@ esac
 
 	fi
         CFLAGS="$CFLAGS -DNDEBUG"
-fi
 
 
 
@@ -5587,6 +5582,14 @@ else
     { $as_echo "$as_me:${as_lineno-$LINENO}: Instructed to disable OpenMP. Disabled..." >&5
 $as_echo "$as_me: Instructed to disable OpenMP. Disabled..." >&6;}
 fi
+
+if test x"${enable_debug}" = xyes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling optimizations" >&5
+$as_echo "$as_me: Disabling optimizations" >&6;}
+    CFLAGS=`echo "$CFLAGS" | sed 's,-O3,,g'`
+    HAVE_OPENMP=no
+fi
+
 if test x"${HAVE_OPENMP}" = xyes ; then
     OPENMP_LIBS=${OPENMP_CFLAGS}
 fi
