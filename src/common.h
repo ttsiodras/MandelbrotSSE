@@ -38,6 +38,6 @@ void panic(char *fmt, ...);
 int kbhit(int *xx, int *yy);
 
 // Creates the window and sets up the palette of colors.
-void init256(int bSSE);
+void init256();
 
 #endif

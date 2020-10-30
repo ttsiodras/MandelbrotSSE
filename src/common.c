@@ -12,7 +12,7 @@ void panic(char *fmt, ...)
 }
 
 // Setup window we will draw in
-void init256(int bSSE)
+void init256()
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         panic("[x] Couldn't initialize SDL: %d\n", SDL_GetError());
@@ -36,7 +36,7 @@ void init256(int bSSE)
             unsigned char red, green, blue;
             unsigned char quadrant = value / 32;
             if (quadrant == 0) {
-                blue = (bSSE && !value) ? 0 : 248;
+                blue = 248;
                 green = 8 * (value % 32);
                 red = 0;
             } else if (quadrant == 1) {

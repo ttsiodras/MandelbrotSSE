@@ -110,6 +110,10 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 
 	k++;
     }
+    *(*p)++ = k1[0] == ITERA ? 128 : k1[0] & 127;
+    *(*p)++ = k1[1] == ITERA ? 128 : k1[1] & 127;
+    *(*p)++ = k1[2] == ITERA ? 128 : k1[2] & 127;
+    *(*p)++ = k1[3] == ITERA ? 128 : k1[3] & 127;
     
 #else
     k1[0] = k1[1] = k1[2] = k1[3] = 0;
@@ -154,17 +158,16 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 	:"m"(re[0]),"m"(im[0]),"m"(foursf[0]),"m"(onesf[0]),"m"(allbits[0]),"i"(ITERA)
 	:"%eax","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","memory");
 
-    k1[0] = (int)(outputs[0]);
-    k1[1] = (int)(outputs[1]);
-    k1[2] = (int)(outputs[2]);
-    k1[3] = (int)(outputs[3]);
+    int tmp = (int)(outputs[0]);
+    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
+    tmp = (int)(outputs[1]);
+    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
+    tmp = (int)(outputs[2]);
+    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
+    tmp = (int)(outputs[3]);
+    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
 
 #endif
-
-    *(*p)++ = k1[0];
-    *(*p)++ = k1[1];
-    *(*p)++ = k1[2];
-    *(*p)++ = k1[3];
 }
 
 void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
@@ -222,8 +225,12 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 
 	k++;
     }
+
+    *(*p)++ = k1[0] == ITERA ? 128 : k1[0] & 127;
+    *(*p)++ = k1[1] == ITERA ? 128 : k1[1] & 127;
     
 #else
+
     k1[0] = k1[1] = 0;
 					      // x' = x^2 - y^2 + a
 					      // y' = 2xy + b
@@ -265,13 +272,12 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0]),"i"(ITERA)
 	:"%eax","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","memory");
 
-    k1[0] = (int)(outputs[0]);
-    k1[1] = (int)(outputs[1]);
+    int tmp = (int)(outputs[0]);
+    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
+    tmp = (int)(outputs[1]);
+    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
 
 #endif
-
-    *(*p)++ = k1[0];
-    *(*p)++ = k1[1];
 }
 
 void preMandel(double xld, double yld, double xru, double yru)
