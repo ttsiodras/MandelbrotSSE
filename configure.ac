@@ -1,9 +1,10 @@
-AC_INIT([mandelSSE], [2.0], [ttsiod@softlab.ntua.gr])
+AC_INIT([mandelSSE], [2.1], [ttsiodras@gmail.com])
 
 AC_LANG(C)
 AC_CONFIG_HEADERS([src/config.h])
 
 AC_CONFIG_MACRO_DIR([ac-macros])
+AM_REVISION_UTILS
 
 # Don't clutter this dir, store in build-aux
 AC_CONFIG_AUX_DIR([build-aux])
@@ -172,5 +173,5 @@ AC_SUBST(SDL_CFLAGS)
 AC_SUBST(SDL_LIBS)
 
 # Finally create all the generated files
-AC_CONFIG_FILES([Makefile src/Makefile]) 
+AC_CONFIG_FILES([Makefile src/Makefile src/version.h]) 
 AC_OUTPUT

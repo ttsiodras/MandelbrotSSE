@@ -8,6 +8,8 @@
 #define GLOBAL
 #include "common.h"
 
+#include "version.h"
+
 // XaoS algorithm implemenation
 #include "xaos.h"
 
@@ -58,7 +60,7 @@ int main(int argc, char *argv[])
     } else
         usage(argv);
 
-    printf("\n[-] Mandelbrot Zoomer by Thanassis.\n");
+    printf("\n[-] Mandelbrot Zoomer by Thanassis, version: %s\n", version);
     if (!bAutoPilot)
         puts("[-] Note you can launch with option '-a' to enable autopilot.");
 
