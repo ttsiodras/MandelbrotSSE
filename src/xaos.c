@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "xaos.h"
+#include "sse.h"
 
 // Structure used to sort the coordinate distances from the previous frame.
 // Keep reading further below to understand how this is used.
@@ -201,50 +202,20 @@ void mandel(
         int yclose = ylookup[i];
         // Start moving from xld to xru, one xstep at a time
         xcur = xld;
-        for (j=0; j<MAXX; j++) {
+        for (j=0; j<MAXX; j+=2) {
             // if both the xlookup and ylookup indicate that we can
             // lookup a pixel from the old frame...
             int xclose = xlookup[j];
-            if (xclose != -1 && yclose != -1) {
+            int xclose2 = xlookup[j+1];
+            if (xclose != -1 && xclose2 != -1 && yclose != -1) {
                 // ...then just re-use it!
                 *p++ = bufferMem[bufIdx^1][yclose*MAXX + xclose];
+                *p++ = bufferMem[bufIdx^1][yclose*MAXX + xclose2];
             } else {
                 // Otherwise, perform a full computation.
-                double re, im;
-                double rez, imz;
-                double t1, t2, o1, o2;
-                double xold = 0., yold = 0.;
-                int k, period=0;
-
-                re = xcur;
-                im = ycur;
-                rez = 0.0f;
-                imz = 0.0f;
-
-                k = 0;
-                while (k < ITERA) {
-                    o1 = rez * rez;
-                    o2 = imz * imz;
-                    t2 = 2 * rez * imz;
-                    t1 = o1 - o2;
-                    rez = t1 + re;
-                    imz = t2 + im;
-                    if (o1 + o2 > 4)
-                        break;
-                    if (xold == rez && yold == imz) {
-                        k = ITERA;
-                        break;
-                    }
-                    k++;
-                    if (period++ == 20) {
-                        period = 0;
-                        xold = rez;
-                        yold = imz;
-                    }
-                }
-                *p++ = k == ITERA ? 128 : k&127;
+                CoreLoopDouble(xcur, ycur, xstep, &p);
             }
-            xcur += xstep;
+            xcur += 2*xstep;
         }
     }
     // Copy the memory-based buffer into the SDL one...
