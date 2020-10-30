@@ -4478,9 +4478,11 @@ $as_echo "#define SIMD_SSE 1" >>confdefs.h
             HAVESSE=${enable_sse} # forced
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: $HAVESSE" >&5
 $as_echo "$HAVESSE" >&6; }
+	    if test x"${HAVESSE}" = xyes ; then
 
 $as_echo "#define SIMD_SSE 1" >>confdefs.h
 
+            fi
         fi
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSE2" >&5

@@ -81,7 +81,9 @@ __asm__ volatile ("xorps %%xmm0, %%xmm0":::"memory"); return 0;
         else
             HAVESSE=${enable_sse} # forced
             AC_MSG_RESULT($HAVESSE)
-            AC_DEFINE([SIMD_SSE], 1, [Define this to use SSE intrinsics.])
+	    if test x"${HAVESSE}" = xyes ; then
+                AC_DEFINE([SIMD_SSE], 1, [Define this to use SSE intrinsics.])
+            fi
         fi
 
 	AC_MSG_CHECKING(for SSE2)
