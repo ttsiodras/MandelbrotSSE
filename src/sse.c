@@ -10,6 +10,16 @@
 static Uint8 *previewBufferOriginal = NULL;
 static Uint8 *previewBufferFiltered = NULL;
 
+#define CLEAR_ARRAY(x) memset(&x, 0, sizeof(x))
+#define COPY_ARRAY4(src, dst) \
+    dst[0] = src[0]; \
+    dst[1] = src[1]; \
+    dst[2] = src[2]; \
+    dst[3] = src[3];
+#define COPY_ARRAY2(src, dst) \
+    dst[0] = src[0]; \
+    dst[1] = src[1];
+
 // SSE requires data to be aligned to 16bytes, so...
 
 #ifdef __GNUC__
@@ -38,7 +48,7 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
     DECLARE_ALIGNED(16,float,xold[4]);
     DECLARE_ALIGNED(16,float,yold[4]);
     float t1, t2, o1, o2;
-    int k, period=0;
+    int k=0, period=0;
 #else
     DECLARE_ALIGNED(16,float,outputs[4]);
 #endif
@@ -51,77 +61,31 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
     im[0] = im[1] = im[2] = im[3] = (float) ycur;
 
 #ifndef SIMD_SSE
-    rez[0] = 0.0f;
-    rez[1] = 0.0f;
-    rez[2] = 0.0f;
-    rez[3] = 0.0f;
-    imz[0] = 0.0f;
-    imz[1] = 0.0f;
-    imz[2] = 0.0f;
-    imz[3] = 0.0f;
-    xold[0] = 0.0f;
-    xold[1] = 0.0f;
-    xold[2] = 0.0f;
-    xold[3] = 0.0f;
-    yold[0] = 0.0f;
-    yold[1] = 0.0f;
-    yold[2] = 0.0f;
-    yold[3] = 0.0f;
-
-    k1[0] = k1[1] = k1[2] = k1[3] = 0;
-    k = 1;
+    CLEAR_ARRAY(rez);
+    CLEAR_ARRAY(imz);
+    CLEAR_ARRAY(xold);
+    CLEAR_ARRAY(yold);
+    CLEAR_ARRAY(k1);
     while (k < ITERA) {
-	if (!k1[0]) {
-	    o1 = rez[0] * rez[0];
-	    o2 = imz[0] * imz[0];
-	    t2 = 2 * rez[0] * imz[0];
-	    t1 = o1 - o2;
-	    rez[0] = t1 + re[0];
-	    imz[0] = t2 + im[0];
-	    if (o1 + o2 > 4)
-		k1[0] = k;
-            if (rez[0] == xold[0] && imz[0] == yold[0])
-                k1[0] = ITERA;
+
+#define WORK_ON_SLOT(x)                                 \
+	if (!k1[x]) {                                   \
+	    o1 = rez[x] * rez[x];                       \
+	    o2 = imz[x] * imz[x];                       \
+	    t2 = 2 * rez[x] * imz[x];                   \
+	    t1 = o1 - o2;                               \
+	    rez[x] = t1 + re[x];                        \
+	    imz[x] = t2 + im[x];                        \
+	    if (o1 + o2 > 4)                            \
+		k1[x] = k;                              \
+            if (rez[x] == xold[x] && imz[x] == yold[x]) \
+                k1[x] = ITERA;                          \
 	}
 
-	if (!k1[1]) {
-	    o1 = rez[1] * rez[1];
-	    o2 = imz[1] * imz[1];
-	    t2 = 2 * rez[1] * imz[1];
-	    t1 = o1 - o2;
-	    rez[1] = t1 + re[1];
-	    imz[1] = t2 + im[1];
-	    if (o1 + o2 > 4)
-		k1[1] = k;
-            if (rez[1] == xold[1] && imz[1] == yold[1])
-                k1[1] = ITERA;
-	}
-	
-	if (!k1[2]) {
-	    o1 = rez[2] * rez[2];
-	    o2 = imz[2] * imz[2];
-	    t2 = 2 * rez[2] * imz[2];
-	    t1 = o1 - o2;
-	    rez[2] = t1 + re[2];
-	    imz[2] = t2 + im[2];		    
-	    if (o1 + o2 > 4)
-		k1[2] = k;
-            if (rez[2] == xold[2] && imz[2] == yold[2])
-                k1[2] = ITERA;
-	}
-	
-	if (!k1[3]) {
-	    o1 = rez[3] * rez[3];
-	    o2 = imz[3] * imz[3];
-	    t2 = 2 * rez[3] * imz[3];
-	    t1 = o1 - o2;
-	    rez[3] = t1 + re[3];
-	    imz[3] = t2 + im[3];
-	    if (o1 + o2 > 4)
-		k1[3] = k;
-            if (rez[3] == xold[3] && imz[3] == yold[3])
-                k1[3] = ITERA;
-	}
+        WORK_ON_SLOT(0)
+        WORK_ON_SLOT(1)
+        WORK_ON_SLOT(2)
+        WORK_ON_SLOT(3)
 
 	if (k1[0]*k1[1]*k1[2]*k1[3] != 0)
 	    break;
@@ -130,26 +94,19 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 
         period = (period+1) & 0xF;
         if (period == 0xF) {
-            xold[0] = rez[0];
-            yold[0] = imz[0];
-            xold[1] = rez[1];
-            yold[1] = imz[1];
-            xold[2] = rez[2];
-            yold[2] = imz[2];
-            xold[3] = rez[3];
-            yold[3] = imz[3];
+            COPY_ARRAY4(rez, xold);
+            COPY_ARRAY4(imz, yold);
         }
     }
-    if (!k1[0]) k1[0] = ITERA;
-    if (!k1[1]) k1[1] = ITERA;
-    if (!k1[2]) k1[2] = ITERA;
-    if (!k1[3]) k1[3] = ITERA;
+#define EMIT_SLOT(x)                              \
+    if (!k1[x]) k1[x] = ITERA;                    \
+    *(*p)++ = k1[x] == ITERA ? 128 : k1[x] & 127;
 
-    *(*p)++ = k1[0] == ITERA ? 128 : k1[0] & 127;
-    *(*p)++ = k1[1] == ITERA ? 128 : k1[1] & 127;
-    *(*p)++ = k1[2] == ITERA ? 128 : k1[2] & 127;
-    *(*p)++ = k1[3] == ITERA ? 128 : k1[3] & 127;
-    
+    EMIT_SLOT(0)
+    EMIT_SLOT(1)
+    EMIT_SLOT(2)
+    EMIT_SLOT(3)
+
 #else
     k1[0] = k1[1] = k1[2] = k1[3] = 0;
 
@@ -217,7 +174,7 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
     DECLARE_ALIGNED(16,double,xold[2]);
     DECLARE_ALIGNED(16,double,yold[2]);
     double t1, t2, o1, o2;
-    int k, period=0;
+    int k=0, period=0;
 #else
     DECLARE_ALIGNED(16,double,outputs[2]);
 #endif
@@ -228,43 +185,16 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
     im[0] = im[1] = ycur;
 
 #ifndef SIMD_SSE
-    rez[0] = 0.0f;
-    rez[1] = 0.0f;
-    imz[0] = 0.0f;
-    imz[1] = 0.0f;
-    xold[0] = 0.0f;
-    yold[0] = 0.0f;
-    xold[1] = 0.0f;
-    yold[1] = 0.0f;
+    CLEAR_ARRAY(rez);
+    CLEAR_ARRAY(imz);
+    CLEAR_ARRAY(xold);
+    CLEAR_ARRAY(yold);
+    CLEAR_ARRAY(k1);
 
-    k = k1[0] = k1[1] = 0;
     while (k < ITERA) {
-	if (!k1[0]) {
-	    o1 = rez[0] * rez[0];
-	    o2 = imz[0] * imz[0];
-	    t2 = 2 * rez[0] * imz[0];
-	    t1 = o1 - o2;
-	    rez[0] = t1 + re[0];
-	    imz[0] = t2 + im[0];
-	    if (o1 + o2 > 4)
-		k1[0] = k;
-            if (rez[0] == xold[0] && imz[0] == yold[0])
-                k1[0] = ITERA;
-	}
+        WORK_ON_SLOT(0)
+        WORK_ON_SLOT(1)
 
-	if (!k1[1]) {
-	    o1 = rez[1] * rez[1];
-	    o2 = imz[1] * imz[1];
-	    t2 = 2 * rez[1] * imz[1];
-	    t1 = o1 - o2;
-	    rez[1] = t1 + re[1];
-	    imz[1] = t2 + im[1];
-	    if (o1 + o2 > 4)
-		k1[1] = k;
-            if (rez[1] == xold[1] && imz[1] == yold[1])
-	        k1[1] = ITERA;
-	}
-	
 	if (k1[0]*k1[1] != 0)
 	    break;
 
@@ -272,17 +202,12 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 
         period = (period+1) & 0xF;
         if (period == 0xF) {
-            xold[0] = rez[0];
-            yold[0] = imz[0];
-            xold[1] = rez[1];
-            yold[1] = imz[1];
+            COPY_ARRAY2(rez, xold);
+            COPY_ARRAY2(imz, yold);
         }
     }
-    if (!k1[0]) k1[0] = ITERA;
-    if (!k1[1]) k1[1] = ITERA;
-
-    *(*p)++ = k1[0] == ITERA ? 128 : k1[0] & 127;
-    *(*p)++ = k1[1] == ITERA ? 128 : k1[1] & 127;
+    EMIT_SLOT(0)
+    EMIT_SLOT(1)
     
 #else
 
