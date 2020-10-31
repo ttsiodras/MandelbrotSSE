@@ -237,9 +237,9 @@ int autopilot()
         unsigned st = SDL_GetTicks();
         mandel(xld, yld, xru, yru, 0.75); // Re-use 99.25% of the pixels.
         unsigned en = SDL_GetTicks();
-        if (en - st < MINIMUM_MS_PER_FRAME)
+        if (en - st < minimum_ms_per_frame)
             // Limit frame rate to 60 fps.
-            SDL_Delay(MINIMUM_MS_PER_FRAME - en + st);
+            SDL_Delay(minimum_ms_per_frame - en + st);
 
         int result = kbhit(&x, &y);
         if (result == 1)
@@ -264,7 +264,7 @@ int mousedriven()
         if (SDL_GetTicks() - time_since_we_moved > 200)
             // If we haven't moved for more than 200ms,
             // go to sleep - no need to waste the CPU
-            SDL_Delay(MINIMUM_MS_PER_FRAME);
+            SDL_Delay(minimum_ms_per_frame);
         else if (SDL_GetTicks() - time_since_we_moved > 50)
             // if we haven't moved for 50 to 200ms,
             // draw an accurate frame (0% reuse)
@@ -276,8 +276,8 @@ int mousedriven()
             mandel(xld, yld, xru, yru, 0.75);
             unsigned en = SDL_GetTicks();
             // Limit frame rate to 60 fps.
-            if (en - st < MINIMUM_MS_PER_FRAME)
-                SDL_Delay(MINIMUM_MS_PER_FRAME - en + st);
+            if (en - st < minimum_ms_per_frame)
+                SDL_Delay(minimum_ms_per_frame - en + st);
         }
         int result = kbhit(&x, &y);
         if (result == 1)
@@ -297,7 +297,7 @@ int mousedriven()
         frames++;
     }
     // Inform point reached, for potential autopilot target
-    printf("[-] Reached final point: %2.20f, %2.20f\n",
+    printf("[-]\n[-] Reached final point: %2.20f, %2.20f\n",
            (xru+xld)/2., (yru+yld)/2.);
     return frames;
 }

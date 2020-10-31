@@ -473,9 +473,9 @@ int mandelSSE(int bAutoPilot)
     CHECK(allbits)
 
 #ifndef SIMD_SSE
-    printf("[-] Pipelined floating point calculation\n");
+    printf("[-] SSE2 mode:  off (using pipelined floating point)\n");
 #else
-    printf("[-] SSE calculation\n");
+    printf("[-] SSE2 mode:  on\n");
 #endif
 
     previewBufferOriginal = (Uint8 *) malloc(MAXX*MAXY/16);
@@ -516,9 +516,9 @@ int mandelSSE(int bAutoPilot)
                 mandelFloat(xld, yld, xru, yru);
             }
             unsigned en = SDL_GetTicks();
-            if (en - st < MINIMUM_MS_PER_FRAME)
+            if (en - st < minimum_ms_per_frame)
                 // Limit frame rate to 60 fps.
-                SDL_Delay(MINIMUM_MS_PER_FRAME - en + st);
+                SDL_Delay(minimum_ms_per_frame - en + st);
         }
         int result = kbhit(&x, &y);
         if (result == 1)
@@ -547,7 +547,7 @@ int mandelSSE(int bAutoPilot)
     }
     en = SDL_GetTicks();
 
-    printf("[-] Frames/sec:%5.2f\n\n", ((float) i) / ((en - st) / 1000.0f));
+    printf("[-] Frames/sec: %5.2f\n\n", ((float) i) / ((en - st) / 1000.0f));
     fflush(stdout);
     return 0;
 }
