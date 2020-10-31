@@ -11,7 +11,7 @@ void panic(char *fmt, ...)
     exit(1);
 }
 
-// Setup window we will draw in
+// Creates the window and sets up the palette of colors.
 void init256()
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -64,6 +64,9 @@ void init256()
     }
 }
 
+// returns 1 if ESC is hit
+// returns 2 if left click (and updates xx and yy with mouse coord)
+// returns 3 if right click (and updates xx and yy with mouse coord)
 int kbhit(int *xx, int *yy)
 {
     int x,y;

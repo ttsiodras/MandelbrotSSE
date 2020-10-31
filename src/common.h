@@ -11,9 +11,6 @@
 // Number of frames to zoom-in
 #define ZOOM_FRAMES 2500
 
-// 60 fps maximum => minimum milliseconds per frame = 1000/60 = 17 
-#define MINIMUM_MS_PER_FRAME 17
-
 // The global variables.
 // Only one file defines GLOBAL (to nothing) before #include-ing this file.
 #ifndef GLOBAL
@@ -23,13 +20,17 @@
 // Window dimensions
 GLOBAL long MAXX, MAXY;
 
+// 60 fps maximum => minimum milliseconds per frame = 1000/60 = 17
+// Default value set in getopt parsing in main.
+GLOBAL unsigned minimum_ms_per_frame;
+
 // SDL surface we draw in
 GLOBAL SDL_Surface *surface;
 
 // The surface buffer; this is where we place our pixel data in
 GLOBAL Uint8 *buffer;
 
-// Remote message and exit
+// Print message and exit
 void panic(char *fmt, ...);
 
 // returns 1 if ESC is hit
