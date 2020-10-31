@@ -352,9 +352,9 @@ void preMandel(double xld, double yld, double xru, double yru)
 	    if (i<MINI_MAXY-1) down = *(pSrc+MINI_MAXX);
 	    if (j>0) left = *(pSrc-1);
 	    if (j<MINI_MAXX-1) right = *(pSrc+1);
-	    // set final preview pixel to black only if 
+	    // set final preview pixel to black (128) only if 
 	    // both itself and all 4 neighbors are black
-	    *pDst++ = *pSrc++ | up | down | left | right;
+	    *pDst++ = *pSrc++ & up & down & left & right;
 	}
     }
 }
