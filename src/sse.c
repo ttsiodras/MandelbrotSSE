@@ -113,14 +113,16 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 					      // x' = x^2 - y^2 + a
 					      // y' = 2xy + b
 					      //
-    asm("mov    %7,%%ecx\n\t"
+    asm("mov    %7,%%ecx\n\t"                 //  ecx is ITERA
+        "xor    %%ebx, %%ebx\n\t"             //  period = 0
 	"movaps %4,%%xmm5\n\t"                //  4.     4.     4.     4.       ; xmm5
 	"movaps %2,%%xmm6\n\t"                //  a0     a1     a2     a3       ; xmm6
 	"movaps %3,%%xmm7\n\t"                //  b0     b1     b2     b3       ; xmm7
 	"xorps  %%xmm0,%%xmm0\n\t"            //  0.     0.     0.     0.
 	"xorps  %%xmm1,%%xmm1\n\t"            //  0.     0.     0.     0.
 	"xorps  %%xmm3,%%xmm3\n\t"            //  0.     0.     0.     0.       ; bailout counters
-	"1:\n\t"
+
+	"1:\n\t"                              //  Main Mandelbrot computation
 	"movaps %%xmm0,%%xmm2\n\t"            //  x0     x1     x2     x3       ; xmm2
 	"mulps  %%xmm1,%%xmm2\n\t"            //  x0*y0  x1*y1  x2*y2  x3*y3    ; xmm2
 	"mulps  %%xmm0,%%xmm0\n\t"            //  x0^2   x1^2   x2^2   x3^2     ; xmm0
@@ -132,23 +134,52 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 	"movaps %%xmm2,%%xmm1\n\t"            //  x0*y0  x1*y1  x2*y2  x3*y3    ; xmm1
 	"addps  %%xmm1,%%xmm1\n\t"            //  2x0*y0 2x1*y1 2x2*y2 2x3*y3   ; xmm1
 	"addps  %%xmm7,%%xmm1\n\t"            //  y0'    y1'    y2'    y3'      ; xmm1
+
 	"cmpltps %%xmm5,%%xmm4\n\t"           //  <4     <4     <4     <4 ?     ; xmm2
 	"movaps %%xmm4,%%xmm2\n\t"            //  xmm2 has all 1s in the non-overflowed pixels
 	"movmskps %%xmm4,%%eax\n\t"           //  (lower 4 bits reflect comparisons)
 	"andps  %5,%%xmm4\n\t"                //  so, prepare to increase the non-overflowed ("and" with onesf)
 	"addps  %%xmm4,%%xmm3\n\t"            //  by updating their counters
+
 	"or     %%eax,%%eax\n\t"              //  have all 4 pixels overflowed ?
-	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f)
-	"dec    %%ecx\n\t"                    //  otherwise,repeat 239 times...
-	"jnz    1b\n\t"                       //  by jumping backward to label 1 (1b)
-	"movaps %%xmm2,%%xmm4\n\t"            //  xmm4 has all 1s in the non-overflowed pixels
-	"xorps  %6,%%xmm4\n\t"                //  xmm4 has all 1s in the overflowed pixels (xoring with allbits)
+
+	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f) and end the loop
+	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop ITERA times...
+	"jnz    22f\n\t"                      //  but before redoing the loop, first do periodicity checking
+
+                                              //  We've done the loop ITERA times.
+                                              //  Set non-overflowed outputs to 0 (inside xmm3). Here's how:
+	"movaps %%xmm2,%%xmm4\n\t"            //  xmm4 has all 1s in the non-overflowed pixels...
+	"xorps  %6,%%xmm4\n\t"                //  xmm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
 	"andps  %%xmm4,%%xmm3\n\t"            //  zero out the xmm3 parts that belong to non-overflowed (set to black)
+	"jmp    2f\n\t"                       //  And jump to end of everything, where xmm3 is written into outputs
+
+	"22:\n\t"                             //  Periodicity checking
+        "inc %%bl\n\t"                        //  period++
+        "and $0xF, %%bl\n\t"                  //  period &= 0xF
+        "jnz 11f\n\t"                         //  if period is not zero, continue to check if we're seeing xold, yold again
+        "movaps %%xmm0, %%xmm8\n\t"           //  time to update xold[2], yold[2] - store xold[2] in xmm8
+        "movaps %%xmm1, %%xmm9\n\t"           //  and yold[2] in xmm9
+	"jmp    1b\n\t"                       //  and jump back to the loop beginning
+
+        "11:\n\t"                             //  are we seeing xold[2], yold[2] into our rez[2], imz[2]?
+        "movaps %%xmm8, %%xmm10\n\t"          //  the comparison instruction will modify the target XMM register, so use xmm10
+        "cmpeqps %%xmm0, %%xmm10\n\t"         //  compare xmm10 (which now has xold[2]) with rez[2]. Set all 1s into xmm10 if equal
+	"movmskps %%xmm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison. 
+        "or %%eax, %%eax\n\t"                 //  are they BOTH zero?
+        "jz 1b\n\t"                           //  Yes - so, neither of the two rez matched with the two xold. Repeat the loop
+        "movaps %%xmm9, %%xmm10\n\t"          //  Set xmm10 to contain yold[2]
+        "cmpeqps %%xmm1, %%xmm10\n\t"         //  compare xmm10 with imz[2]. Set all 1s into xmm10 if equal
+	"movmskps %%xmm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison.
+        "or %%eax, %%eax\n\t"                 //  are they BOTH zero?
+        "jz 1b\n\t"                           //  Yes - so, neither of the two imz matched with the two yold. Repeat the loop
+	"xorps  %%xmm3,%%xmm3\n\t"            //  Repetition detected. Set both results to 0.0 (both pixels black)
+
 	"2:\n\t"
 	"movaps %%xmm3,%0\n\t"
 	:"=m"(outputs[0]),"=m"(outputs[2])
 	:"m"(re[0]),"m"(im[0]),"m"(foursf[0]),"m"(onesf[0]),"m"(allbits[0]),"i"(ITERA)
-	:"%eax","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","memory");
+	:"%eax","%ebx","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","xmm8","xmm9","xmm10","memory");
 
     int tmp = (int)(outputs[0]);
     *(*p)++ = tmp == 0 ? 128 : (tmp&127);
