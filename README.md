@@ -177,7 +177,7 @@ After decompressing the SDL 1.2.15 tarball, install MinGW:
 
     $ sudo apt install gcc-mingw-w64
 
-Then compile libSDL:
+Then download the source code of libSDL and compile it as follows:
 
     $ cd SDL-1.2.15
     $ ./configure --host=x86_64-w64-mingw32 --disable-dga \
