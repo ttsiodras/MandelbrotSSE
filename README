@@ -16,6 +16,9 @@ files. The 'autopilot' one zooms in a specific location, while the other
 one allows you to zoom interactively using your mouse (left-click zooms in,
 right-click zooms out).
 
+For those of you that want to build from source code, there are 
+cross-compilation instructions later in this document.
+
 For Linux/BSD/OSX users
 -----------------------
 
