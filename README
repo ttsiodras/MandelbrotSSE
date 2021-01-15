@@ -31,22 +31,26 @@ You can then simply...
 
     $ src/mandelSSE -h
 
-    Usage: ./src/mandelSSE [-a] [-s|-x] [-h] [WIDTH HEIGHT]
+    Usage: ./src/mandelSSE [-a] [-s|-x] [-h] [-f rate] [WIDTH HEIGHT]
     Where:
         -h      Show this help message
-        -a      Run in autopilot mode (default: mouse mode)
-        -s      Use SSE and OpenMP
-        -x      Use XaoS algorithm (default)
-    If WIDTH and HEIGHT are not provided, they default to: 800 600
+        -m      Run in mouse-driven mode
+        -a      Run in autopilot mode (default)
+        -x      Use XaoS algorithm with SSE2 and OpenMP (default)
+        -s      Use naive algorithm with SSE, SSE2 and OpenMP
+        -f fps  Enforce upper bound of frames per second (default: 60)
+                (use 0 to run at full possible speed)
 
-    $ src/mandelSSE -a 1024 768
+    If WIDTH and HEIGHT are not provided, they default to: 1024 768
+
+    $ src/mandelSSE
     (Runs in autopilot in 1024x768 window, using XaoS)
 
-    $ src/mandelSSE -s 1024 768
-    (Runs in mouse-driven SSE mode, in a 1024x768 window)
+    $ src/mandelSSE -s -m 800 600
+    (Runs in mouse-driven SSE mode, in a 800x600 window)
     (left-click zooms-in, right-click zooms out)
 
-    $ src/mandelSSE -x 1024 768
+    $ src/mandelSSE -x -m 800 600
     (same as before, but in XaoS mode - much faster, esp during deep zooms)
 
 WHAT IS THIS, AGAIN?

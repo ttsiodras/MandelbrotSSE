@@ -1,5 +1,5 @@
-#include <math.h>  // for fabs
-#include <float.h> // For DBL_MIN
+#include <math.h>
+#include <float.h>
 
 #include "common.h"
 #include "xaos.h"
@@ -230,13 +230,22 @@ void mandel(
 
 int autopilot()
 {
+    static double interesting_points[][2] = {
+        {-0.72996052273553402312, -0.24047620199671820851},
+        {-0.73162093699311890000, -0.25655927868100719680},
+        {-1.03178026025649338671, -0.36035584735925418887},
+        {-0.73174633145360257203,  0.21761907852168510535},
+        {-1.25616009010536688884,  0.39944527454476780326},
+        {-0.03804043691413014350, -0.98541408335385771711}
+    };
+    const int total_interesting_points =
+        sizeof(interesting_points) / sizeof(interesting_points[0]);
+    int rand_idx = rand() % total_interesting_points;
+    double targetx = interesting_points[rand_idx][0];
+    double targety = interesting_points[rand_idx][1];
     int i = 0;
     int x,y;
     double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
-    const double
-        targetx = -0.72996052273553402312, targety = -0.24047620199671820851;
-    //  targetx = -0.73162093699311890000, targety = -0.25655927868100719680;
-    //  targetx = -1.03178026025649338671, targety = -0.36035584735925418887;
 
     while(i<ZOOM_FRAMES) {
         unsigned st = SDL_GetTicks();

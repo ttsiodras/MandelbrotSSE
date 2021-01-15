@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
 #include <SDL.h>
 
 // With this macro defined... 
@@ -27,8 +29,8 @@ void usage(char *argv[])
     printf("Usage: %s [-a] [-s|-x] [-h] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
     puts("Where:");
     puts("\t-h\tShow this help message");
-    puts("\t-m\tRun in mouse-driven mode (default)");
-    puts("\t-a\tRun in autopilot mode");
+    puts("\t-m\tRun in mouse-driven mode");
+    puts("\t-a\tRun in autopilot mode (default)");
     puts("\t-x\tUse XaoS algorithm with SSE2 and OpenMP (default)");
     puts("\t-s\tUse naive algorithm with SSE, SSE2 and OpenMP");
     puts("\t-f fps\tEnforce upper bound of frames per second (default: 60)");
@@ -39,7 +41,7 @@ void usage(char *argv[])
 
 int main(int argc, char *argv[])
 {
-    int opt, bAutoPilot = 0, bSSE = 0, fps = 60;
+    int opt, bAutoPilot = 1, bSSE = 0, fps = 60;
 
     while ((opt = getopt(argc, argv, "hmaxsf:")) != -1) {
         switch (opt) {
@@ -103,6 +105,8 @@ int main(int argc, char *argv[])
     printf("\n[-] Mandelbrot Zoomer by Thanassis, version: %s\n", version);
     if (!bAutoPilot)
         puts("[-] NOTE: you can launch with option '-a' to enable autopilot.");
+    else
+        puts("[-] NOTE: you can launch with option '-m' to pilot with your mouse.");
     printf("[-]\n[-] Mode:       %s\n", bSSE ? "naive SSE" : "XaoS");
     printf("[-] Autopilot:  %s\n", bAutoPilot ? "On" : "Off");
     printf("[-] Dimensions: %ld x %ld\n", MAXX, MAXY);
@@ -122,9 +126,10 @@ int main(int argc, char *argv[])
 
     unsigned en, st = SDL_GetTicks();
     unsigned frames;
-    if (bAutoPilot)
+    if (bAutoPilot) {
+        srand(time(NULL));
         frames = autopilot();
-    else
+    } else
         frames = mousedriven();
     en = SDL_GetTicks();
 
