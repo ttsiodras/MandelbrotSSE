@@ -1,8 +1,12 @@
-#include <math.h>
+#include <math.h>  // for fabs
+#include <float.h> // For DBL_MIN
 
 #include "common.h"
 #include "xaos.h"
 #include "sse.h"
+
+// Beyond this, things get shaky...
+#define ZOOM_LIMIT 1e295*MAXX*DBL_MIN
 
 // Structure used to sort the coordinate distances from the previous frame.
 // Keep reading further below to understand how this is used.
@@ -245,6 +249,10 @@ int autopilot()
         int result = kbhit(&x, &y);
         if (result == 1)
             break;
+        // Did we zoom too much?
+        double xrange = xru-xld;
+        if (xrange < ZOOM_LIMIT)
+            break;
         xld += (targetx - xld)/100.;
         xru += (targetx - xru)/100.;
         yld += (targety - yld)/100.;
@@ -262,6 +270,7 @@ int mousedriven()
     int frames = 0;
 
     while(1) {
+        frames++;
         if (SDL_GetTicks() - time_since_we_moved > 200)
             // If we haven't moved for more than 200ms,
             // go to sleep - no need to waste the CPU
@@ -290,12 +299,14 @@ int mousedriven()
             double xrange = xru-xld;
             double yrange = yru-yld;
             double direction = result==2?1.:-1.;
+            // Don't zoom beyond the level allowed by IEEE754
+            if (result == 2 && xrange < ZOOM_LIMIT)
+                continue;
             xld += direction*0.01*ratiox*xrange;
             xru -= direction*0.01*(1.-ratiox)*xrange;
             yld += direction*0.01*(1.-ratioy)*yrange;
             yru -= direction*0.01*ratioy*yrange;
         }
-        frames++;
     }
     // Inform point reached, for potential autopilot target
     printf("[-]\n[-] Reached final point: %2.20f, %2.20f\n",
