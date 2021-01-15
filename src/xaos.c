@@ -240,35 +240,50 @@ int autopilot()
     };
     const int total_interesting_points =
         sizeof(interesting_points) / sizeof(interesting_points[0]);
-    int rand_idx = rand() % total_interesting_points;
-    double targetx = interesting_points[rand_idx][0];
-    double targety = interesting_points[rand_idx][1];
+    int start_idx = rand() % total_interesting_points;
+
     int i = 0;
-    int x,y;
-    double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
+    while(1) {
+        // Where shall we zoom this time?
+        int rand_idx = start_idx % total_interesting_points;
+        double targetx = interesting_points[rand_idx][0];
+        double targety = interesting_points[rand_idx][1];
+        start_idx++;
 
-    while(i<ZOOM_FRAMES) {
-        unsigned st = SDL_GetTicks();
-        mandel(xld, yld, xru, yru, 0.75); // Re-use 99.25% of the pixels.
-        unsigned en = SDL_GetTicks();
-        if (en - st < minimum_ms_per_frame)
+        // Re-initialize the window location...
+        double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
+
+        // Start by drawing everything...
+        double percentage_of_pixels = 100.0;
+
+        // Go!
+        while(1) {
+            unsigned st = SDL_GetTicks();
+            mandel(xld, yld, xru, yru, percentage_of_pixels);
+            unsigned en = SDL_GetTicks();
+
+            // After the 1st frame, re-use 99.25% of the pixels:
+            percentage_of_pixels = 0.75;
+
             // Limit frame rate to 60 fps.
-            SDL_Delay(minimum_ms_per_frame - en + st);
+            if (en - st < minimum_ms_per_frame)
+                SDL_Delay(minimum_ms_per_frame - en + st);
 
-        int result = kbhit(&x, &y);
-        if (result == 1)
-            break;
-        // Did we zoom too much?
-        double xrange = xru-xld;
-        if (xrange < ZOOM_LIMIT)
-            break;
-        xld += (targetx - xld)/100.;
-        xru += (targetx - xru)/100.;
-        yld += (targety - yld)/100.;
-        yru += (targety - yru)/100.;
-        i++;
+            int x,y;
+            int result = kbhit(&x, &y);
+            if (result == 1)
+                return i;
+            // Did we zoom too much?
+            double xrange = xru-xld;
+            if (xrange < ZOOM_LIMIT)
+                break;
+            xld += (targetx - xld)/100.;
+            xru += (targetx - xru)/100.;
+            yld += (targety - yld)/100.;
+            yru += (targety - yru)/100.;
+            i++;
+        }
     }
-    return i;
 }
 
 int mousedriven()

@@ -117,8 +117,11 @@ int main(int argc, char *argv[])
 
     init256(bSSE);
 
-    const char *usage =
-        "Left click to zoom-in, right-click to zoom-out, ESC to quit...";
+    const char *usage;
+    if (bAutoPilot)
+        usage = "ESC to quit...";
+    else
+        usage = "Left click to zoom-in, right-click to zoom-out, ESC to quit...";
     SDL_WM_SetCaption(usage, usage);
 
     if (bSSE)
