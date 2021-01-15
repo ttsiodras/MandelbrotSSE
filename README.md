@@ -9,7 +9,7 @@ COMPILE/INSTALL/RUN
 Windows
 -------
 Windows users can download and run a pre-compiled Windows binary
-[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.2/mandelSSE-win32-2.2.zip).
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.3/mandelSSE-win32-2.3.zip).
 
 After decompressing, you can simply execute either one of the two .bat
 files. The 'autopilot' one zooms in a specific location, while the other
@@ -26,8 +26,6 @@ Make sure you have libSDL installed - then...
 
     $ ./configure
     $ make
-
-You can then simply...
 
     $ src/mandelSSE -h
 
@@ -46,12 +44,16 @@ You can then simply...
     $ src/mandelSSE
     (Runs in autopilot in 1024x768 window, using XaoS)
 
-    $ src/mandelSSE -s -m 800 600
+    $ src/mandelSSE -s -m 1280 720
     (Runs in mouse-driven SSE mode, in a 800x600 window)
     (left-click zooms-in, right-click zooms out)
 
-    $ src/mandelSSE -x -m 800 600
+    $ src/mandelSSE -x -m 1280 720
     (same as before, but in XaoS mode - much faster, esp during deep zooms)
+
+For ultimate speed, disable the frame limiter (defaults to 60fps)
+
+    $ src/mandelSSE -x -m -f 0 1280 720
 
 WHAT IS THIS, AGAIN?
 ====================
