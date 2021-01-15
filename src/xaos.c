@@ -231,7 +231,8 @@ int autopilot()
     double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
     const double
         targetx = -0.72996052273553402312, targety = -0.24047620199671820851;
-    // targetx = -0.73162092639301889996, targety = -0.25655927868100719680;
+    //  targetx = -0.73162093699311890000, targety = -0.25655927868100719680;
+    //  targetx = -1.03178026025649338671, targety = -0.36035584735925418887;
 
     while(i<ZOOM_FRAMES) {
         unsigned st = SDL_GetTicks();
