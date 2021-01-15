@@ -123,7 +123,7 @@ void mandel(
         xcoords[bufIdx][i] = xcur;
         // We then scan the xcoords of the previous frame, to find
         // the one with the closest coordinate.
-        for (j=i-10; j<i+10; j++) {
+        for (j=i-30; j<i+30; j++) {
             if(j<0) continue;
             if(j>MAXX-1) continue;
             double ndiff = fabs(xcur - xcoords[bufIdx^1][j]);
@@ -165,7 +165,7 @@ void mandel(
         int idx_best = -1;
         double diff = 1e10;
         ycoords[bufIdx][i] = ycur;
-        for (j=i-10; j<i+10; j++) {
+        for (j=i-30; j<i+30; j++) {
             if(j<0) continue;
             if(j>MAXY-1) continue;
             double ndiff = fabs(ycur - ycoords[bufIdx^1][j]);
