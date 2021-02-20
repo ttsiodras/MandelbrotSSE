@@ -45,7 +45,7 @@ Make sure you have libSDL installed - then...
     (Runs in autopilot in 1024x768 window, using XaoS)
 
     $ src/mandelSSE -s -m 1280 720
-    (Runs in mouse-driven SSE mode, in a 800x600 window)
+    (Runs in mouse-driven SSE mode, in a 1280x720 window)
     (left-click zooms-in, right-click zooms out)
 
     $ src/mandelSSE -x -m 1280 720
