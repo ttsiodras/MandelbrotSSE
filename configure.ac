@@ -1,4 +1,4 @@
-AC_INIT([mandelSSE], [2.3], [ttsiodras@gmail.com])
+AC_INIT([mandelSSE], [2.4], [ttsiodras@gmail.com])
 
 AC_LANG(C)
 AC_CONFIG_HEADERS([src/config.h])
@@ -26,19 +26,13 @@ AC_ARG_ENABLE(openmp,
     [enable_openmp="yes"])
 
 AC_ARG_ENABLE(sse, 
-    [AS_HELP_STRING([--enable-sse],[Force use of SSE])], 
-    [enable_sse="$enableval"], 
-    [enable_sse="yes"])
+    [AS_HELP_STRING([--enable-sse],[Force use of SSE])])
 
 AC_ARG_ENABLE(sse2, 
-    [AS_HELP_STRING([--enable-sse2],[Force use of SSE2])], 
-    [enable_sse2="$enableval"], 
-    [enable_sse2="yes"])
+    [AS_HELP_STRING([--enable-sse2],[Force use of SSE2])])
 
 AC_ARG_ENABLE(ssse3, 
-    [AS_HELP_STRING([--enable-ssse3],[Force use of SSSE3])], 
-    [enable_ssse3="$enableval"], 
-    [enable_ssse3="yes"])
+    [AS_HELP_STRING([--enable-ssse3],[Force use of SSSE3])])
 
 AC_ARG_ENABLE(debug, 
     [AS_HELP_STRING([--enable-debug],[Compile in debug mode])], 
@@ -77,7 +71,7 @@ __asm__ volatile ("xorps %%xmm0, %%xmm0":::"memory"); return 0;
                 AC_DEFINE([SIMD_SSE], 1, [Define this to use SSE intrinsics.])
             fi
         else
-            HAVESSE=${enable_sse} # forced
+            HAVESSE=yes # forced
             AC_MSG_RESULT($HAVESSE)
 	    if test x"${HAVESSE}" = xyes ; then
                 AC_DEFINE([SIMD_SSE], 1, [Define this to use SSE intrinsics.])
@@ -96,7 +90,7 @@ __asm__ volatile ("xorpd %%xmm0, %%xmm0":::"memory"); return 0;
             ])], [HAVESSE2=yes], [HAVESSE2=no])
             AC_MSG_RESULT($HAVESSE2)
         else
-            HAVESSE2=${enable_sse2} # forced
+            HAVESSE2=yes # forced
             AC_MSG_RESULT($HAVESSE2)
         fi
 
@@ -112,7 +106,7 @@ __asm__ volatile ("pabsd %%xmm0, %%xmm0":::"memory"); return 0;
             ])], [HAVESSSE3=yes], [HAVESSSE3=no])
             AC_MSG_RESULT($HAVESSSE3)
         else
-            HAVESSSE3=${enable_ssse3} # forced
+            HAVESSSE3=yes # forced
             AC_MSG_RESULT($HAVESSSE3)
         fi
 
