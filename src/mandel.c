@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     } else
         frames = mousedriven();
     en = SDL_GetTicks();
-
+    SDL_Quit();
     printf("[-] Frames/sec: %5.2f\n\n",
            ((float) frames) / ((en - st) / 1000.0f));
     fflush(stdout);
