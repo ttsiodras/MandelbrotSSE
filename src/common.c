@@ -60,6 +60,9 @@ void init256()
         palette[128].g = 0;
         palette[128].b = 0;
 
+        palette[0].r = 0;
+        palette[0].g = 0;
+        palette[0].b = 0;
         SDL_SetColors(surface, palette, 0, 256);
     }
 }

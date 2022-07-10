@@ -28,37 +28,41 @@ static Uint8 *previewBufferFiltered = NULL;
     #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
 #endif
 
-DECLARE_ALIGNED(16,double,ones[2]) = { 1.0, 1.0 };
-DECLARE_ALIGNED(16,double,fours[2]) = { 4.0, 4.0 };
+DECLARE_ALIGNED(16,double,ones[4]) = { 1.0, 1.0, 1.0, 1.0 };
+DECLARE_ALIGNED(16,double,fours[4]) = { 4.0, 4.0, 4.0, 4.0 };
 
-DECLARE_ALIGNED(16,float,onesf[4]) = { 1.0f, 1.0f, 1.0f, 1.0f };
-DECLARE_ALIGNED(16,float,foursf[4]) = { 4.0f, 4.0f, 4.0f, 4.0f };
+DECLARE_ALIGNED(32,float,onesf[8]) = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+DECLARE_ALIGNED(32,float,foursf[8]) = { 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f };
 
-DECLARE_ALIGNED(16,unsigned,allbits[4]) = {0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF};
+DECLARE_ALIGNED(32,unsigned,allbits[8]) = {0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF};
 
 void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 {
-    DECLARE_ALIGNED(16,float,re[4]);
-    DECLARE_ALIGNED(16,float,im[4]);
-    DECLARE_ALIGNED(16,unsigned,k1[4]);
+    DECLARE_ALIGNED(32,float,re[8]);
+    DECLARE_ALIGNED(32,float,im[8]);
+    DECLARE_ALIGNED(32,unsigned,k1[8]);
 
 #ifndef SIMD_SSE
-    DECLARE_ALIGNED(16,float,rez[4]);
-    DECLARE_ALIGNED(16,float,imz[4]);
-    DECLARE_ALIGNED(16,float,xold[4]);
-    DECLARE_ALIGNED(16,float,yold[4]);
+    DECLARE_ALIGNED(32,float,rez[8]);
+    DECLARE_ALIGNED(32,float,imz[8]);
+    DECLARE_ALIGNED(32,float,xold[8]);
+    DECLARE_ALIGNED(32,float,yold[8]);
     float t1, t2, o1, o2;
     int k=0, period=0;
 #else
-    DECLARE_ALIGNED(16,float,outputs[4]);
+    DECLARE_ALIGNED(32,float,outputs[8]);
 #endif
 
     re[0] = (float) xcur;
     re[1] = (float) (xcur + xstep);
     re[2] = (float) (xcur + 2*xstep);
     re[3] = (float) (xcur + 3*xstep);
+    re[4] = (float) (xcur + 4*xstep);
+    re[5] = (float) (xcur + 5*xstep);
+    re[6] = (float) (xcur + 6*xstep);
+    re[7] = (float) (xcur + 7*xstep);
 
-    im[0] = im[1] = im[2] = im[3] = (float) ycur;
+    im[0] = im[1] = im[2] = im[3] = im[4] = im[5] = im[6] = im[7] = (float) ycur;
 
 #ifndef SIMD_SSE
     CLEAR_ARRAY(rez);
@@ -108,87 +112,88 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
     EMIT_SLOT(3)
 
 #else
-    k1[0] = k1[1] = k1[2] = k1[3] = 0;
+    k1[0] = k1[1] = k1[2] = k1[3] = k1[4] = k1[5] = k1[6] = k1[7] = 0;
 
 					      // x' = x^2 - y^2 + a
 					      // y' = 2xy + b
 					      //
     asm("mov    %6,%%ecx\n\t"                 //  ecx is ITERA
         "xor    %%ebx, %%ebx\n\t"             //  period = 0
-	"movaps %3,%%xmm5\n\t"                //  4.     4.     4.     4.       ; xmm5
-	"movaps %1,%%xmm6\n\t"                //  a0     a1     a2     a3       ; xmm6
-	"movaps %2,%%xmm7\n\t"                //  b0     b1     b2     b3       ; xmm7
-	"xorps  %%xmm0,%%xmm0\n\t"            //  0.     0.     0.     0.
-	"xorps  %%xmm1,%%xmm1\n\t"            //  0.     0.     0.     0.
-	"xorps  %%xmm3,%%xmm3\n\t"            //  0.     0.     0.     0.       ; bailout counters
+	"vmovaps %3,%%ymm5\n\t"               //  4.     4.     4.     4.     4.     4.     4.     4.        ; ymm5
+	"vmovaps %1,%%ymm6\n\t"               //  a0     a1     a2     a3     a4     a5     a6     a7        ; ymm6
+	"vmovaps %2,%%ymm7\n\t"               //  b0     b1     b2     b3     b4     b5     b6     b7        ; ymm7
+	"vxorps  %%ymm0,%%ymm0,%%ymm0\n\t"    //  0.     0.     0.     0.     0.     0.     0.     0.
+	"vxorps  %%ymm1,%%ymm1,%%ymm1\n\t"    //  0.     0.     0.     0.     0.     0.     0.     0.
+	"vxorps  %%ymm3,%%ymm3,%%ymm3\n\t"    //  0.     0.     0.     0.     0.     0.     0.     0.        ; bailout counters
 
 	"1:\n\t"                              //  Main Mandelbrot computation
-	"movaps %%xmm0,%%xmm2\n\t"            //  x0     x1     x2     x3       ; xmm2
-	"mulps  %%xmm1,%%xmm2\n\t"            //  x0*y0  x1*y1  x2*y2  x3*y3    ; xmm2
-	"mulps  %%xmm0,%%xmm0\n\t"            //  x0^2   x1^2   x2^2   x3^2     ; xmm0
-	"mulps  %%xmm1,%%xmm1\n\t"            //  y0^2   y1^2   y2^2   y3^2     ; xmm1
-	"movaps %%xmm0,%%xmm4\n\t"            //  
-	"addps  %%xmm1,%%xmm4\n\t"            //  x0^2+y0^2  x1...              ; xmm4
-	"subps  %%xmm1,%%xmm0\n\t"            //  x0^2-y0^2  x1...              ; xmm0
-	"addps  %%xmm6,%%xmm0\n\t"            //  x0'    x1'    x2'    x3'      ; xmm0
-	"movaps %%xmm2,%%xmm1\n\t"            //  x0*y0  x1*y1  x2*y2  x3*y3    ; xmm1
-	"addps  %%xmm1,%%xmm1\n\t"            //  2x0*y0 2x1*y1 2x2*y2 2x3*y3   ; xmm1
-	"addps  %%xmm7,%%xmm1\n\t"            //  y0'    y1'    y2'    y3'      ; xmm1
+	"vmovaps %%ymm0,%%ymm2\n\t"           //  x0     x1     x2     x3     ...  ; ymm2
+	"vmulps  %%ymm1,%%ymm2,%%ymm2\n\t"    //  x0*y0  x1*y1  x2*y2  x3*y3  ...  ; ymm2
+	"vmulps  %%ymm0,%%ymm0,%%ymm0\n\t"    //  x0^2   x1^2   x2^2   x3^2   ...  ; ymm0
+	"vmulps  %%ymm1,%%ymm1,%%ymm1\n\t"    //  y0^2   y1^2   y2^2   y3^2   ...  ; ymm1
+	"vmovaps %%ymm0,%%ymm4\n\t"           //  
+	"vaddps  %%ymm1,%%ymm4,%%ymm4\n\t"    //  x0^2+y0^2  x1...            ...  ; ymm4
+	"vsubps  %%ymm1,%%ymm0,%%ymm0\n\t"    //  x0^2-y0^2  x1...            ...  ; ymm0
+	"vaddps  %%ymm6,%%ymm0,%%ymm0\n\t"    //  x0'    x1'    x2'    x3'    ...  ; ymm0
+	"vmovaps %%ymm2,%%ymm1\n\t"           //  x0*y0  x1*y1  x2*y2  x3*y3  ...  ; ymm1
+	"vaddps  %%ymm1,%%ymm1,%%ymm1\n\t"    //  2x0*y0 2x1*y1 2x2*y2 2x3*y3 ...  ; ymm1
+	"vaddps  %%ymm7,%%ymm1,%%ymm1\n\t"    //  y0'    y1'    y2'    y3'    ...  ; ymm1
 
-	"cmpltps %%xmm5,%%xmm4\n\t"           //  <4     <4     <4     <4 ?     ; xmm2
-	"movaps %%xmm4,%%xmm2\n\t"            //  xmm2 has all 1s in the non-overflowed pixels
-	"movmskps %%xmm4,%%eax\n\t"           //  (lower 4 bits reflect comparisons)
-	"andps  %4,%%xmm4\n\t"                //  so, prepare to increase the non-overflowed ("and" with onesf)
-	"addps  %%xmm4,%%xmm3\n\t"            //  by updating their counters
+	"vcmpltps %%ymm5,%%ymm4,%%ymm4\n\t"   //  <4     <4     <4     <4 ?   ...  ; ymm2
+	"vmovaps %%ymm4,%%ymm2\n\t"           //  ymm2 has all 1s in the non-overflowed pixels
+	"vmovmskps %%ymm4,%%eax\n\t"          //  (lower 8 bits reflect comparisons)
+	"vandps  %4,%%ymm4,%%ymm4\n\t"        //  so, prepare to increase the non-overflowed ("and" with onesf)
+	"vaddps  %%ymm4,%%ymm3,%%ymm3\n\t"    //  by updating their counters
 
-	"or     %%eax,%%eax\n\t"              //  have all 4 pixels overflowed ?
+	"or     %%eax,%%eax\n\t"              //  have all 8 pixels overflowed ?
 
 	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f) and end the loop
 	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop ITERA times...
 	"jnz    22f\n\t"                      //  but before redoing the loop, first do periodicity checking
 
                                               //  We've done the loop ITERA times.
-                                              //  Set non-overflowed outputs to 0 (inside xmm3). Here's how:
-	"movaps %%xmm2,%%xmm4\n\t"            //  xmm4 has all 1s in the non-overflowed pixels...
-	"xorps  %5,%%xmm4\n\t"                //  xmm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
-	"andps  %%xmm4,%%xmm3\n\t"            //  zero out the xmm3 parts that belong to non-overflowed (set to black)
-	"jmp    2f\n\t"                       //  And jump to end of everything, where xmm3 is written into outputs
+                                              //  Set non-overflowed outputs to 0 (inside ymm3). Here's how:
+	"vmovaps %%ymm2,%%ymm4\n\t"           //  ymm4 has all 1s in the non-overflowed pixels...
+	"vxorps  %5,%%ymm4,%%ymm4\n\t"        //  ymm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
+	"vandps  %%ymm4,%%ymm3,%%ymm3\n\t"    //  zero out the ymm3 parts that belong to non-overflowed (set to black)
+	"jmp    2f\n\t"                       //  And jump to end of everything, where ymm3 is written into outputs
 
 	"22:\n\t"                             //  Periodicity checking
         "inc %%bl\n\t"                        //  period++
         "and $0xF, %%bl\n\t"                  //  period &= 0xF
         "jnz 11f\n\t"                         //  if period is not zero, continue to check if we're seeing xold, yold again
-        "movaps %%xmm0, %%xmm8\n\t"           //  time to update xold[2], yold[2] - store xold[2] in xmm8
-        "movaps %%xmm1, %%xmm9\n\t"           //  and yold[2] in xmm9
+        "vmovaps %%ymm0, %%ymm8\n\t"          //  time to update xold[2], yold[2] - store xold[2] in ymm8
+        "vmovaps %%ymm1, %%ymm9\n\t"          //  and yold[2] in ymm9
 	"jmp    1b\n\t"                       //  and jump back to the loop beginning
 
         "11:\n\t"                             //  are we seeing xold[2], yold[2] into our rez[2], imz[2]?
-        "movaps %%xmm8, %%xmm10\n\t"          //  the comparison instruction will modify the target XMM register, so use xmm10
-        "cmpeqps %%xmm0, %%xmm10\n\t"         //  compare xmm10 (which now has xold[2]) with rez[2]. Set all 1s into xmm10 if equal
-	"movmskps %%xmm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison. 
-        "or %%eax, %%eax\n\t"                 //  are they BOTH zero?
-        "jz 1b\n\t"                           //  Yes - so, neither of the two rez matched with the two xold. Repeat the loop
-        "movaps %%xmm9, %%xmm10\n\t"          //  Set xmm10 to contain yold[2]
-        "cmpeqps %%xmm1, %%xmm10\n\t"         //  compare xmm10 with imz[2]. Set all 1s into xmm10 if equal
-	"movmskps %%xmm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison.
-        "or %%eax, %%eax\n\t"                 //  are they BOTH zero?
-        "jz 1b\n\t"                           //  Yes - so, neither of the two imz matched with the two yold. Repeat the loop
-	"xorps  %%xmm3,%%xmm3\n\t"            //  Repetition detected. Set both results to 0.0 (both pixels black)
+        "vmovaps %%ymm8, %%ymm10\n\t"         //  the comparison instruction will modify the target XMM register, so use ymm10
+        "vcmpeqps %%ymm0, %%ymm10,%%ymm10\n\t" //  compare ymm10 (which now has xold[2]) with rez[2]. Set all 1s into ymm10 if equal
+	"vmovmskps %%ymm10,%%eax\n\t"         //  the lower 4 bits of EAX now reflect the result of the comparison. 
+        "or %%eax, %%eax\n\t"                 //  are they ALL zero?
+        "jz 1b\n\t"                           //  Yes - so, none of the four rez matched with the two xold. Repeat the loop
+        "vmovaps %%ymm9, %%ymm10\n\t"         //  Set ymm10 to contain yold[2]
+        "vcmpeqps %%ymm1, %%ymm10,%%ymm10\n\t" //  compare ymm10 with imz[2]. Set all 1s into ymm10 if equal
+	"vmovmskps %%ymm10,%%eax\n\t"         //  the lower 4 bits of EAX now reflect the result of the comparison.
+        "or %%eax, %%eax\n\t"                 //  are they ALL zero?
+        "jz 1b\n\t"                           //  Yes - so, none of the four imz matched with the two yold. Repeat the loop
+	"vxorps  %%ymm3,%%ymm3,%%ymm3\n\t"    //  Repetition detected. Set results to 0.0 (four pixels black)
 
 	"2:\n\t"
-	"movaps %%xmm3,%0\n\t"
+	"vmovaps %%ymm3,%0\n\t"
 	:"=m"(outputs[0])
 	:"m"(re[0]),"m"(im[0]),"m"(foursf[0]),"m"(onesf[0]),"m"(allbits[0]),"i"(ITERA)
-	:"%eax","%ebx","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","xmm8","xmm9","xmm10","memory");
+	:"%eax","%ebx","%ecx","ymm0","ymm1","ymm2","ymm3","ymm4","ymm5","ymm6","ymm7","ymm8","ymm9","ymm10","memory");
 
-    int tmp = (int)(outputs[0]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
-    tmp = (int)(outputs[1]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
-    tmp = (int)(outputs[2]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
-    tmp = (int)(outputs[3]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
+    int tmp;
+    tmp = (int)(outputs[0]); *(*p)++ = !(tmp & 127) ? 128 : (tmp&127);
+    tmp = (int)(outputs[1]); *(*p)++ = !(tmp & 127) ? 128 : (tmp&127);
+    tmp = (int)(outputs[2]); *(*p)++ = !(tmp & 127) ? 128 : (tmp&127);
+    tmp = (int)(outputs[3]); *(*p)++ = !(tmp & 127) ? 128 : (tmp&127);
+    tmp = (int)(outputs[4]); *(*p)++ = !(tmp & 127) ? 128 : (tmp&127);
+    tmp = (int)(outputs[5]); *(*p)++ = !(tmp & 127) ? 128 : (tmp&127);
+    tmp = (int)(outputs[6]); *(*p)++ = !(tmp & 127) ? 128 : (tmp&127);
+    tmp = (int)(outputs[7]); *(*p)++ = !(tmp & 127) ? 128 : (tmp&127);
 
 #endif
 }
@@ -330,7 +335,7 @@ void preMandel(double xld, double yld, double xru, double yru)
     double xstep, ystep, xcur, ycur;
     int i, j;
 
-    int MINI_MAXX = MAXX/4;
+    int MINI_MAXX = MAXX/8;
     int MINI_MAXY = MAXY/4;
 
     xstep = (xru - xld)/MINI_MAXX;
@@ -351,19 +356,19 @@ void preMandel(double xld, double yld, double xru, double yru)
         }
     }
 
-    // We now have a 1/16 of the total picture (in the previewBufferOriginal)
-    // Each of these mini-pixels corresponds to a 4x4 block of pixels.
+    // We now have a 1/32 of the total picture (in the previewBufferOriginal)
+    // Each of these mini-pixels corresponds to a 8x4 block of pixels.
     //
     // But how can we use this as an accelerator for the black areas?
     //
-    // Well, we can simply map and see if a 4x1 area maps to a black pixel
-    // in the mini-preview, and if so, plot all 4 pixels as black.
+    // Well, we can simply map and see if a 8x1 area maps to a black pixel
+    // in the mini-preview, and if so, plot all 8 pixels as black.
     //
     // Only... this wont work.
     //
-    // The mini-preview is just a sampling - perhaps one of the 4
+    // The mini-preview is just a sampling - perhaps one of the 8
     // pixels is black, and we just happened to "fall" on it in
-    // the preview. Not all 4 pixels must be black, only one is!
+    // the preview. Not all 8 pixels must be black, only one is!
     //
     // We need to "shrink" the black areas in the preview
     // to avoid this problem.
@@ -406,25 +411,23 @@ void mandelFloat(double xld, double yld, double xru, double yru)
 #pragma omp parallel for schedule(dynamic,4) private(p,xcur,ycur,i,j)
 #endif
     for (i=0; i<MAXY; i++) {
-	Uint32 offset = (i>>2)*(MAXX >> 2);
+	Uint32 offset = (i>>2)*(MAXX >> 3);
 	xcur = xld;
 	ycur = yru - i*ystep;
 	p = &buffer[i*MAXX];
-        for (j=0; j<MAXX; j+=4, offset++) {
+        for (j=0; j<MAXX; j+=8, offset++) {
 	    // Avoid calculating black areas - see comment in preMandel
 	    if (128 == previewBufferFiltered[offset]) {
-		*p++ = 128;
-		*p++ = 128;
-		*p++ = 128;
-		*p++ = 128;
-		xcur += 4*xstep;
-		#ifndef NDEBUG
-		saved ++;
-		#endif
-		continue;
+	        *p++ = 128; *p++ = 128; *p++ = 128; *p++ = 128;
+	        *p++ = 128; *p++ = 128; *p++ = 128; *p++ = 128;
+	        xcur += 8*xstep;
+	        #ifndef NDEBUG
+	        saved ++;
+	        #endif
+	        continue;
 	    }
 	    CoreLoopFloat(xcur, ycur, xstep, &p);
-	    xcur += 4*xstep;
+	    xcur += 8*xstep;
         }
     }
     SDL_UpdateRect(surface, 0, 0, MAXX, MAXY);
@@ -449,27 +452,25 @@ void mandelDouble(double xld, double yld, double xru, double yru)
 #pragma omp parallel for schedule(dynamic,4) private(p,xcur,ycur,i,j)
 #endif
     for (i=0; i<MAXY; i++) {
-	Uint32 offset = (i>>2)*(MAXX >> 2);
+	Uint32 offset = (i>>2)*(MAXX >> 3);
 	xcur = xld;
 	ycur = yru - i*ystep;
 	p = &buffer[i*MAXX];
-        for (j=0; j<MAXX; j+=4, offset++) {
+        for (j=0; j<MAXX; j+=8, offset++) {
 	    // Avoid calculating black areas - see comment in preMandel
 	    if (128 == previewBufferFiltered[offset]) {
-		*p++ = 128;
-		*p++ = 128;
-		*p++ = 128;
-		*p++ = 128;
-		xcur += 4*xstep;
+		*p++ = 128; *p++ = 128; *p++ = 128; *p++ = 128;
+		*p++ = 128; *p++ = 128; *p++ = 128; *p++ = 128;
+		xcur += 8*xstep;
 		#ifndef NDEBUG
 		saved ++;
 		#endif
 		continue;
 	    }
-	    CoreLoopDouble(xcur, ycur, xstep, &p);
-	    xcur += 2*xstep;
-	    CoreLoopDouble(xcur, ycur, xstep, &p);
-	    xcur += 2*xstep;
+	    CoreLoopDouble(xcur, ycur, xstep, &p); xcur += 2*xstep;
+	    CoreLoopDouble(xcur, ycur, xstep, &p); xcur += 2*xstep;
+	    CoreLoopDouble(xcur, ycur, xstep, &p); xcur += 2*xstep;
+	    CoreLoopDouble(xcur, ycur, xstep, &p); xcur += 2*xstep;
         }
     }
     SDL_UpdateRect(surface, 0, 0, MAXX, MAXY);
