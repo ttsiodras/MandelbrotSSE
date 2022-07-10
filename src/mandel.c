@@ -57,9 +57,7 @@ int main(int argc, char *argv[])
                     panic("[x] Not a valid frame rate: '%s'", optarg);
                 break;
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n",
-                        argv[0]);
-                exit(EXIT_FAILURE);
+                usage(argv);
         }
     }
     if (optind == argc) {
