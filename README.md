@@ -94,10 +94,14 @@ Over the last two decades, I kept coming back to this, enhancing it.
   algorithm [inside a 1.4$ microcontroller](
   https://www.youtube.com/watch?v=5875JOnFDLg).
 
-- And finally (?), in October 2020, I implemented what I understood to be
-  the XaoS algorithm - that is, re-using pixels from the previous frame
-  to optimally update the next one. Especially in deep-dives and large
-  windows, this delivers amazing speedups.
+- In October 2020, I implemented what I understood to be the XaoS algorithm;
+  that is, re-using pixels from the previous frame to optimally update
+  the next one. Especially in deep-dives and large windows, this delivered
+  amazing speedups.
+
+- In July 2022, I optimised further with AVX instructions (+80% speed
+  in CoreLoopDouble). The code exists in a separate branch
+  (https://github.com/ttsiodras/MandelbrotSSE/tree/AVX).
 
 CODERS ONLY
 ===========
