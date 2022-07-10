@@ -26,13 +26,11 @@
 
 void usage(char *argv[])
 {
-    printf("Usage: %s [-a] [-s|-x] [-h] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
+    printf("Usage: %s [-a|-m] [-h] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
     puts("Where:");
     puts("\t-h\tShow this help message");
     puts("\t-m\tRun in mouse-driven mode");
     puts("\t-a\tRun in autopilot mode (default)");
-    puts("\t-x\tUse XaoS algorithm with SSE2 and OpenMP (default)");
-    puts("\t-s\tUse naive algorithm with SSE, SSE2 and OpenMP");
     puts("\t-f fps\tEnforce upper bound of frames per second (default: 60)");
     puts("\t      \t(use 0 to run at full possible speed)\n");
     puts("If WIDTH and HEIGHT are not provided, they default to: 1024 768");
@@ -41,7 +39,7 @@ void usage(char *argv[])
 
 int main(int argc, char *argv[])
 {
-    int opt, bAutoPilot = 1, bSSE = 0, fps = 60;
+    int opt, bAutoPilot = 1, fps = 60;
 
     while ((opt = getopt(argc, argv, "hmaxsf:")) != -1) {
         switch (opt) {
@@ -53,12 +51,6 @@ int main(int argc, char *argv[])
                 break;
             case 'a':
                 bAutoPilot = 1;
-                break;
-            case 'x':
-                bSSE = 0;
-                break;
-            case 's':
-                bSSE = 1;
                 break;
             case 'f':
                 if (1 != sscanf(optarg, "%d", &fps))
@@ -103,11 +95,11 @@ int main(int argc, char *argv[])
     }
 
     printf("\n[-] Mandelbrot Zoomer by Thanassis, version: %s\n", version);
+        puts("[-] NOTE: you can launch with option '-h' to see available options.");
     if (!bAutoPilot)
-        puts("[-] NOTE: you can launch with option '-a' to enable autopilot.");
+        puts("[-] e.g. you can use '-a' to enable autopilot.");
     else
-        puts("[-] NOTE: you can launch with option '-m' to pilot with your mouse.");
-    printf("[-]\n[-] Mode:       %s\n", bSSE ? "naive SSE" : "XaoS");
+        puts("[-] e.g. you can use '-m' to pilot with your mouse.");
     printf("[-] Autopilot:  %s\n", bAutoPilot ? "On" : "Off");
     printf("[-] Dimensions: %ld x %ld\n", MAXX, MAXY);
     if (!minimum_ms_per_frame)
@@ -115,7 +107,7 @@ int main(int argc, char *argv[])
     else
         printf("[-] FPS Limit:  %d frames/sec\n", fps);
 
-    init256(bSSE);
+    init256();
 
     const char *usage;
     if (bAutoPilot)
@@ -124,20 +116,14 @@ int main(int argc, char *argv[])
         usage = "Left click to zoom-in, right-click to zoom-out, ESC to quit...";
     SDL_WM_SetCaption(usage, usage);
 
-    if (bSSE)
-        return mandelSSE(bAutoPilot);
-
-    unsigned en, st = SDL_GetTicks();
-    unsigned frames;
+    double fps_reported;
     if (bAutoPilot) {
         srand(time(NULL));
-        frames = autopilot();
+        fps_reported = autopilot();
     } else
-        frames = mousedriven();
-    en = SDL_GetTicks();
+        fps_reported = mousedriven();
     SDL_Quit();
-    printf("[-] Frames/sec: %5.2f\n\n",
-           ((float) frames) / ((en - st) / 1000.0f));
+    printf("[-] Frames/sec: %5.2f\n\n", fps_reported);
     fflush(stdout);
     return 0;
 }

@@ -27,15 +27,15 @@ Make sure you have libSDL installed - then...
     $ ./configure
     $ make
 
+You can then simply...
+
     $ src/mandelSSE -h
 
-    Usage: ./src/mandelSSE [-a] [-s|-x] [-h] [-f rate] [WIDTH HEIGHT]
+    Usage: ./src/mandelSSE [-a|-m] [-h] [-f rate] [WIDTH HEIGHT]
     Where:
         -h      Show this help message
         -m      Run in mouse-driven mode
         -a      Run in autopilot mode (default)
-        -x      Use XaoS algorithm with SSE2 and OpenMP (default)
-        -s      Use naive algorithm with SSE, SSE2 and OpenMP
         -f fps  Enforce upper bound of frames per second (default: 60)
                 (use 0 to run at full possible speed)
 
@@ -44,16 +44,14 @@ Make sure you have libSDL installed - then...
     $ src/mandelSSE
     (Runs in autopilot in 1024x768 window, using XaoS)
 
-    $ src/mandelSSE -s -m 1280 720
-    (Runs in mouse-driven SSE mode, in a 1280x720 window)
+    $ src/mandelSSE -m 1280 720
+    (Runs in mouse-driven mode, in a 1280x720 window)
     (left-click zooms-in, right-click zooms out)
 
-    $ src/mandelSSE -x -m 1280 720
-    (same as before, but in XaoS mode - much faster, esp during deep zooms)
+For ultimate speed, disable the frame limiter - by default, you are
+limited to 60fps:
 
-For ultimate speed, disable the frame limiter (defaults to 60fps)
-
-    $ src/mandelSSE -x -m -f 0 1280 720
+    $ src/mandelSSE -m -f 0 1280 720
 
 WHAT IS THIS, AGAIN?
 ====================
@@ -100,16 +98,17 @@ Over the last two decades, I kept coming back to this, enhancing it.
   amazing speedups.
 
 - In July 2022, I optimised further with AVX instructions (+80% speed
-  in CoreLoopDouble). The code exists in a separate branch
-  (https://github.com/ttsiodras/MandelbrotSSE/tree/AVX).
+  in CoreLoopDouble). I kept the old (portable) code, that detects
+  at compile-time whether SSE instructions are there or not, in the
+  ["portable" branch](https://github.com/ttsiodras/MandelbrotSSE/tree/portable).
 
-CODERS ONLY
-===========
+FOR CODERS ONLY
+===============
 
-SSE code
---------
+My SSE code
+-----------
 
-This is the main loop (brace yourselves):
+This used to be my main loop, right after I ported to SSE back in 2002:
 
         ;  x' = x^2 - y^2 + a
         ;  y' = 2xy + b
@@ -147,6 +146,9 @@ This is the main loop (brace yourselves):
         inc     ecx
         cmp     ecx, 119
         jnz     short loop1
+
+The new AVX code (inside CoreLoopDouble) follows the same motif; except
+that it also includes periodicity checking, and uses the YMM registers.
 
 XaoS
 ----
@@ -209,14 +211,10 @@ version:
             /usr/local/packages/SDL-1.2.15-win32/bin/SDL.dll \
             /some/path/for/Windows/
 
-This will suffice for "-x" (XaoS) execution; if you want SSE/OpenMP,
-turn the --disable above into --enable... and remember to copy the
-libgomp DLL, too.
-
 MISC
 ====
 Since it reports frame rate at the end, you can use this as a benchmark
-for SSE instructions - it puts the SSE registers under quite a load.
+for AVX instructions - it puts the AVX registers under quite a load.
 
 I've also coded a
 [CUDA version](https://www.thanassis.space/mandelcuda-1.0.tar.bz2),
