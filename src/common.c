@@ -32,34 +32,46 @@ void init256()
     // A palette for Mandelbrot zooms...
     {
         SDL_Color palette[256];
-        for (int value = 0; value<128; value++) {
+        for (int value = 0; value<256; value++) {
             unsigned char red, green, blue;
             unsigned char quadrant = value / 32;
             if (quadrant == 0) {
-                blue = 248;
+                blue = 0;
                 green = 8 * (value % 32);
                 red = 0;
             } else if (quadrant == 1) {
-                blue = 8*(31 - (value % 32));
+                blue = 8*(value % 32);
                 green = 248;
                 red = 0;
             } else if (quadrant == 2) {
-                blue = 0;
+                blue = 248;
                 green = 248;
                 red = 8*(value % 32);
-            } else {
-                blue = 0;
-                green = 248 - 8 * (value % 32);
+            } else if (quadrant == 3) {
+                blue = 8*(31 - (value % 32));
+                green = 248;
                 red = 248;
+            } else if (quadrant == 4) {
+                blue = 0;
+                green = 8*(31 - (value % 32));
+                red = 248;
+            } else if (quadrant == 5) {
+                blue = 8*(value % 32);
+                green = 0;
+                red = 8*(31 - (value % 32));
+            } else if (quadrant == 6) {
+                blue = 248;
+                green = 8*(value % 32);
+                red = 0;
+            } else {
+                blue = 8*(31 - (value % 32));
+                green = 8*(31 - (value % 32));
+                red = 0;
             }
             palette[value].r = red;
             palette[value].g = green;
             palette[value].b = blue;
         }
-        palette[128].r = 0;
-        palette[128].g = 0;
-        palette[128].b = 0;
-
         palette[0].r = 0;
         palette[0].g = 0;
         palette[0].b = 0;
