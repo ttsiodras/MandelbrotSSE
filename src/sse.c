@@ -100,7 +100,7 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
     }
 #define EMIT_SLOT(x)                              \
     if (!k1[x]) k1[x] = ITERA;                    \
-    *(*p)++ = k1[x] == ITERA ? 128 : k1[x] & 127;
+    *(*p)++ = k1[x];
 
     EMIT_SLOT(0)
     EMIT_SLOT(1)
