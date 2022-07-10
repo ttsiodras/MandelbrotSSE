@@ -12,3 +12,4 @@ src/config.h.in~
 src/*.o
 src/*.exe
 src/version.h
+tags
