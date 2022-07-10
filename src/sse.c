@@ -100,7 +100,7 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
     }
 #define EMIT_SLOT(x)                              \
     if (!k1[x]) k1[x] = ITERA;                    \
-    *(*p)++ = k1[x] == ITERA ? 128 : k1[x] & 127;
+    *(*p)++ = k1[x];
 
     EMIT_SLOT(0)
     EMIT_SLOT(1)
@@ -181,15 +181,12 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 	:"m"(re[0]),"m"(im[0]),"m"(foursf[0]),"m"(onesf[0]),"m"(allbits[0]),"i"(ITERA)
 	:"%eax","%ebx","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","xmm8","xmm9","xmm10","memory");
 
-    int tmp = (int)(outputs[0]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
-    tmp = (int)(outputs[1]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
-    tmp = (int)(outputs[2]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
-    tmp = (int)(outputs[3]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
-
+    unsigned char *tmp = *p;
+    *tmp++ = (int)(outputs[0]);
+    *tmp++ = (int)(outputs[1]);
+    *tmp++ = (int)(outputs[2]);
+    *tmp++ = (int)(outputs[3]);
+    *p = tmp;
 #endif
 }
 
@@ -317,9 +314,9 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 	:"%eax","%ebx","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","xmm8","xmm9","xmm10","memory");
 
     int tmp = (int)(outputs[0]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
+    *(*p)++ = tmp;
     tmp = (int)(outputs[1]);
-    *(*p)++ = tmp == 0 ? 128 : (tmp&127);
+    *(*p)++ = tmp;
 
 #endif
 }
