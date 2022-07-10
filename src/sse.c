@@ -36,20 +36,21 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 					       //
     asm("mov    %6,%%ecx\n\t"                  //  ecx is ITERA
         "xor    %%ebx, %%ebx\n\t"              //  period = 0
-	"vmovapd %3,%%ymm5\n\t"                //  4.     4.        ; ymm5
-	"vmovapd %1,%%ymm6\n\t"                //  a0     a1        ; ymm6
-	"vmovaps %2,%%ymm7\n\t"                //  b0     b1        ; ymm7
-	"vxorpd  %%ymm0,%%ymm0,%%ymm0\n\t"     //  0.     0.        ; rez in ymm0
-	"vxorpd  %%ymm1,%%ymm1,%%ymm1\n\t"     //  0.     0.        ; imz in ymm1
-	"vxorpd  %%ymm3,%%ymm3,%%ymm3\n\t"     //  0.     0.        ; bailout counters
-	"vxorpd  %%ymm8,%%ymm8,%%ymm8\n\t"     //  0.     0.        ; bailout counters
-	"vxorpd  %%ymm9,%%ymm9,%%ymm9\n\t"     //  0.     0.        ; bailout counters
+	"vmovapd %3,%%ymm5\n\t"                //  4.     4.      4.     4.   ; ymm5
+	"vmovapd %1,%%ymm6\n\t"                //  a0     a1      a2     a3   ; ymm6
+	"vmovaps %2,%%ymm7\n\t"                //  b0     b1      b2     b3   ; ymm7
+	"vxorpd  %%ymm0,%%ymm0,%%ymm0\n\t"     //  0.     0.      0.     0.   ; rez in ymm0
+	"vxorpd  %%ymm1,%%ymm1,%%ymm1\n\t"     //  0.     0.      0.     0.   ; imz in ymm1
+	"vxorpd  %%ymm3,%%ymm3,%%ymm3\n\t"     //  0.     0.      0.     0.   ; bailout counters
+	"vxorpd  %%ymm8,%%ymm8,%%ymm8\n\t"     //  0.     0.      0.     0.   ; periodicity check for x
+	"vxorpd  %%ymm9,%%ymm9,%%ymm9\n\t"     //  0.     0.      0.     0.   ; periodicity check for y
 
-	"1:\n\t"                               //  Main Mandelbrot computation
-	"vmovapd %%ymm0,%%ymm2\n\t"            //  x0     x1        ; ymm2
-	"vmulpd  %%ymm1,%%ymm2,%%ymm2\n\t"     //  x0*y0  x1*y1     ; ymm2
-	"vmulpd  %%ymm0,%%ymm0,%%ymm0\n\t"     //  x0^2   x1^2      ; ymm0
-	"vmulpd  %%ymm1,%%ymm1,%%ymm1\n\t"     //  y0^2   y1^2      ; ymm1
+	"1:\n\t"                               //  Main Mandelbrot computation loop (label: 1)
+                                               //
+	"vmovapd %%ymm0,%%ymm2\n\t"            //  x0     x1      x2     x3      ; ymm2
+	"vmulpd  %%ymm1,%%ymm2,%%ymm2\n\t"     //  x0*y0  x1*y1   x2*y2  x3*y3   ; ymm2
+	"vmulpd  %%ymm0,%%ymm0,%%ymm0\n\t"     //  x0^2   x1^2    x2^2   x3^2    ; ymm0
+	"vmulpd  %%ymm1,%%ymm1,%%ymm1\n\t"     //  y0^2   y1^2    y2^2   y3^2    ; ymm1
 	"vmovapd %%ymm0,%%ymm4\n\t"            //  
 	"vaddpd  %%ymm1,%%ymm4,%%ymm4\n\t"     //  x0^2+y0^2  x1... ; ymm4
 	"vsubpd  %%ymm1,%%ymm0,%%ymm0\n\t"     //  x0^2-y0^2  x1... ; ymm0
@@ -78,26 +79,24 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 	"jmp    2f\n\t"                        //  And jump to end of everything, where ymm3 is written into outputs
 
 	"22:\n\t"                              //  Periodicity checking
-        "inc %%bl\n\t"                         //  period++
         "and $0xF, %%bl\n\t"                   //  period &= 0xF
-        "jnz 11f\n\t"                          //  if period is not zero, continue to check if we're seeing xold, yold again
-        "vmovapd %%ymm0, %%ymm8\n\t"           //  time to update xold[2], yold[2] - store xold[2] in ymm8
-        "vmovapd %%ymm1, %%ymm9\n\t"           //  and yold[2] in ymm9
-	"jmp    1b\n\t"                        //  and jump back to the loop beginning
+        "jnz 11f\n\t"                          //  if period is not zero, continue to check if we're seeing xolds, yolds again
+        "inc %%bl\n\t"                         //  period++
+        "vmovapd %%ymm0, %%ymm8\n\t"           //  time to update xolds and yolds - store xolds in ymm8...
+        "vmovapd %%ymm1, %%ymm9\n\t"           //  ...and yolds in ymm9
+	"jmp    1b\n\t"                        //  ..and jump back to the loop beginning.
 
-        "11:\n\t"                              //  are we seeing xold[2], yold[2] into our rez[2], imz[2]?
-        "vmovapd %%ymm8, %%ymm10\n\t"          //  the comparison instruction will modify the target XMM register, so use ymm10
-        "vcmpeqpd %%ymm0, %%ymm10,%%ymm10\n\t" //  compare ymm10 (which now has xold[2]) with rez[2]. Set all 1s into ymm10 if equal
-	"vmovmskpd %%ymm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison. 
-        "or %%eax, %%eax\n\t"                  //  are they BOTH zero?
-        "jz 1b\n\t"                            //  Yes - so, neither of the two rez matched with the two xold. Repeat the loop
-        "vmovapd %%ymm9, %%ymm10\n\t"          //  Set ymm10 to contain yold[2]
-        "vcmpeqpd %%ymm1, %%ymm10,%%ymm10\n\t" //  compare ymm10 with imz[2]. Set all 1s into ymm10 if equal
-	"vmovmskpd %%ymm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison.
-        "or %%eax, %%eax\n\t"                  //  are they BOTH zero?
-        "jz 1b\n\t"                            //  Yes - so, neither of the two imz matched with the two yold. Repeat the loop
-	"vxorpd  %%ymm3,%%ymm3,%%ymm3\n\t"     //  Repetition detected. Set both results to 0.0 (both pixels black)
-
+        "11:\n\t"                              //  are we seeing xolds, yolds in our rez, imz?
+        "vcmpeqpd %%ymm0, %%ymm8,%%ymm10\n\t"  //  compare ymm8 (which has the xolds) with rez. Set all 1s into ymm10 if equal
+	"vmovmskpd %%ymm10,%%eax\n\t"          //  the lower 4 bits of EAX now reflect the result of the 4 comparisons. 
+        "or %%eax, %%eax\n\t"                  //  are they ALL zero?
+        "jz 1b\n\t"                            //  Yes - so, none of the four rez matched with the four xold. Repeat the loop
+        "vcmpeqpd %%ymm1, %%ymm9,%%ymm10\n\t"  //  compare ymm9 with imz. Set all 1s into ymm10 if equal
+	"vmovmskpd %%ymm10,%%eax\n\t"          //  the lower 4 bits of EAX now reflect the result of the 4 comparisons.
+        "or %%eax, %%eax\n\t"                  //  are they ALL zero?
+        "jz 1b\n\t"                            //  Yes - so, none of the four imz matched with the four yold. Repeat the loop
+	"vxorpd  %%ymm3,%%ymm3,%%ymm3\n\t"     //  Repetition detected in at least one of the 4! Set results to 0.0 (pixels black)
+                                               //  Normally, we should do this if ALL 4 repeated. Meh... good enough. And speedy!
 	"2:\n\t"
 	"vmovapd %%ymm3,%0\n\t"
 	:"=m"(outputs[0])
