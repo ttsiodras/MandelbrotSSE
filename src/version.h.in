@@ -1,1 +1,1 @@
-const char version[] = "2.1-@SCM_REVISION@";
+const char version[] = PACKAGE_VERSION "-@SCM_REVISION@";
