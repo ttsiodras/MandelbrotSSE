@@ -23,7 +23,7 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
     DECLARE_ALIGNED(32,double,re[4]);
     DECLARE_ALIGNED(32,double,im[4]);
 
-    DECLARE_ALIGNED(32,double,outputs[4]);
+    DECLARE_ALIGNED(32,unsigned,outputs[4]);
 
     re[0] = xcur;
     re[1] = (xcur + xstep);
@@ -39,6 +39,8 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 	"vmovapd %3,%%ymm5\n\t"                //  4.     4.      4.     4.   ; ymm5
 	"vmovapd %1,%%ymm6\n\t"                //  a0     a1      a2     a3   ; ymm6
 	"vmovaps %2,%%ymm7\n\t"                //  b0     b1      b2     b3   ; ymm7
+	"vmovaps %4,%%ymm11\n\t"               //  1.     1.      1.     1.   ; ymm11
+	"vmovaps %5,%%ymm12\n\t"               //  allbits                    ; ymm12
 	"vxorpd  %%ymm0,%%ymm0,%%ymm0\n\t"     //  0.     0.      0.     0.   ; rez in ymm0
 	"vxorpd  %%ymm1,%%ymm1,%%ymm1\n\t"     //  0.     0.      0.     0.   ; imz in ymm1
 	"vxorpd  %%ymm3,%%ymm3,%%ymm3\n\t"     //  0.     0.      0.     0.   ; bailout counters
@@ -47,34 +49,31 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
 
 	"1:\n\t"                               //  Main Mandelbrot computation loop (label: 1)
                                                //
-	"vmovapd %%ymm0,%%ymm2\n\t"            //  x0     x1      x2     x3      ; ymm2
-	"vmulpd  %%ymm1,%%ymm2,%%ymm2\n\t"     //  x0*y0  x1*y1   x2*y2  x3*y3   ; ymm2
+	"vmulpd  %%ymm1,%%ymm0,%%ymm2\n\t"     //  x0*y0  x1*y1   x2*y2  x3*y3   ; ymm2
 	"vmulpd  %%ymm0,%%ymm0,%%ymm0\n\t"     //  x0^2   x1^2    x2^2   x3^2    ; ymm0
 	"vmulpd  %%ymm1,%%ymm1,%%ymm1\n\t"     //  y0^2   y1^2    y2^2   y3^2    ; ymm1
-	"vmovapd %%ymm0,%%ymm4\n\t"            //  
-	"vaddpd  %%ymm1,%%ymm4,%%ymm4\n\t"     //  x0^2+y0^2  x1... ; ymm4
+	"vaddpd  %%ymm1,%%ymm0,%%ymm4\n\t"     //  x0^2+y0^2  x1... ; ymm4
 	"vsubpd  %%ymm1,%%ymm0,%%ymm0\n\t"     //  x0^2-y0^2  x1... ; ymm0
 	"vaddpd  %%ymm6,%%ymm0,%%ymm0\n\t"     //  x0'    x1'       ; ymm0
-	"vmovapd %%ymm2,%%ymm1\n\t"            //  x0*y0  x1*y1     ; ymm1
-	"vaddpd  %%ymm1,%%ymm1,%%ymm1\n\t"     //  2x0*y0 2x1*y1    ; ymm1
+	"vaddpd  %%ymm2,%%ymm2,%%ymm1\n\t"     //  2x0*y0 2x1*y1    ; ymm1
 	"vaddpd  %%ymm7,%%ymm1,%%ymm1\n\t"     //  y0'    y1'       ; ymm1
 
 	"vcmpltpd %%ymm5,%%ymm4,%%ymm4\n\t"    //  <4     <4        ; ymm2
-	"vmovapd %%ymm4,%%ymm2\n\t"            //  ymm2 has all 1s in the non-overflowed pixels
-	"vmovmskpd %%ymm4,%%eax\n\t"           //  (lower 2 bits reflect comparisons)
-	"vandpd  %4,%%ymm4,%%ymm4\n\t"         //  so, prepare to increase the non-overflowed (and with ones)
-	"vaddpd  %%ymm4,%%ymm3,%%ymm3\n\t"     //  by updating their counters
+	"vmovapd %%ymm4,%%ymm2\n\t"            //  ymm2 and ymm4 have all 1s in the non-overflowed pixels
+	"vmovmskpd %%ymm4,%%eax\n\t"           //  lower 4 bits of EAX reflect comparisons with 4.0
+	"vandpd  %%ymm11,%%ymm4,%%ymm4\n\t"    //  AND with 4 ones...
+	"vaddpd  %%ymm4,%%ymm3,%%ymm3\n\t"     //  ...so you only update the counters of non-overflowed pixels
 
-	"or     %%eax,%%eax\n\t"               //  have both pixels overflowed ?
-
+	"or     %%eax,%%eax\n\t"               //  have all 4 pixels overflowed ?
 	"je     2f\n\t"                        //  yes, jump forward to label 2 (hence, 2f) and end the loop
-	"dec    %%ecx\n\t"                     //  otherwise, repeat the loop ITERA times...
+                                               //
+	"dec    %%ecx\n\t"                     //  otherwise, repeat the loop up to ITERA times...
 	"jnz    22f\n\t"                       //  but before redoing the loop, first do periodicity checking
 
                                                //  We've done the loop ITERA times.
                                                //  Set non-overflowed outputs to 0 (inside ymm3). Here's how:
 	"vmovapd %%ymm2,%%ymm4\n\t"            //  ymm4 has all 1s in the non-overflowed pixels...
-	"vxorpd  %5,%%ymm4,%%ymm4\n\t"         //  ymm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
+	"vxorpd  %%ymm12,%%ymm4,%%ymm4\n\t"    //  ymm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
 	"vandpd  %%ymm4,%%ymm3,%%ymm3\n\t"     //  zero out the ymm3 parts that belong to non-overflowed (set to black)
 	"jmp    2f\n\t"                        //  And jump to end of everything, where ymm3 is written into outputs
 
@@ -96,16 +95,18 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
         "or %%eax, %%eax\n\t"                  //  are they ALL zero?
         "jz 1b\n\t"                            //  Yes - so, none of the four imz matched with the four yold. Repeat the loop
 	"vxorpd  %%ymm3,%%ymm3,%%ymm3\n\t"     //  Repetition detected in at least one of the 4! Set results to 0.0 (pixels black)
-                                               //  Normally, we should do this if ALL 4 repeated. Meh... good enough. And speedy!
+                                               //  Normally, we should do this if ALL 4 repeated. But... good enough. And speedy!
 	"2:\n\t"
-	"vmovapd %%ymm3,%0\n\t"
+        "vcvttpd2dq %%ymm3, %%xmm0\n\t"        //  Convert 4 doubles into 4 ints.
+	"movapd %%xmm0,%0\n\t"
 	:"=m"(outputs[0])
 	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0]),"i"(ITERA)
-	:"%eax","%ebx","%ecx","ymm0","ymm1","ymm2","ymm3","ymm4","ymm5","ymm6","ymm7","ymm8","ymm9","ymm10","memory");
+	:"%eax","%ebx","%ecx","%ymm0","%ymm1","%ymm2","%ymm3","%ymm4","%ymm5","%ymm6","%ymm7","%ymm8","%ymm9","%ymm10","%xmm0","%ymm11","%ymm12","memory");
 
-    int tmp;
-    tmp = (int)(outputs[0]); *(*p)++ = tmp == ITERA ? 0: tmp;
-    tmp = (int)(outputs[1]); *(*p)++ = tmp == ITERA ? 0: tmp;
-    tmp = (int)(outputs[2]); *(*p)++ = tmp == ITERA ? 0: tmp;
-    tmp = (int)(outputs[3]); *(*p)++ = tmp == ITERA ? 0: tmp;
+    unsigned char *tmp = *p;
+    *tmp++ = outputs[0];
+    *tmp++ = outputs[1];
+    *tmp++ = outputs[2];
+    *tmp++ = outputs[3];
+    *p = tmp;
 }
