@@ -113,11 +113,11 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 					      // x' = x^2 - y^2 + a
 					      // y' = 2xy + b
 					      //
-    asm("mov    %7,%%ecx\n\t"                 //  ecx is ITERA
+    asm("mov    %6,%%ecx\n\t"                 //  ecx is ITERA
         "xor    %%ebx, %%ebx\n\t"             //  period = 0
-	"movaps %4,%%xmm5\n\t"                //  4.     4.     4.     4.       ; xmm5
-	"movaps %2,%%xmm6\n\t"                //  a0     a1     a2     a3       ; xmm6
-	"movaps %3,%%xmm7\n\t"                //  b0     b1     b2     b3       ; xmm7
+	"movaps %3,%%xmm5\n\t"                //  4.     4.     4.     4.       ; xmm5
+	"movaps %1,%%xmm6\n\t"                //  a0     a1     a2     a3       ; xmm6
+	"movaps %2,%%xmm7\n\t"                //  b0     b1     b2     b3       ; xmm7
 	"xorps  %%xmm0,%%xmm0\n\t"            //  0.     0.     0.     0.
 	"xorps  %%xmm1,%%xmm1\n\t"            //  0.     0.     0.     0.
 	"xorps  %%xmm3,%%xmm3\n\t"            //  0.     0.     0.     0.       ; bailout counters
@@ -138,7 +138,7 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 	"cmpltps %%xmm5,%%xmm4\n\t"           //  <4     <4     <4     <4 ?     ; xmm2
 	"movaps %%xmm4,%%xmm2\n\t"            //  xmm2 has all 1s in the non-overflowed pixels
 	"movmskps %%xmm4,%%eax\n\t"           //  (lower 4 bits reflect comparisons)
-	"andps  %5,%%xmm4\n\t"                //  so, prepare to increase the non-overflowed ("and" with onesf)
+	"andps  %4,%%xmm4\n\t"                //  so, prepare to increase the non-overflowed ("and" with onesf)
 	"addps  %%xmm4,%%xmm3\n\t"            //  by updating their counters
 
 	"or     %%eax,%%eax\n\t"              //  have all 4 pixels overflowed ?
@@ -150,7 +150,7 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
                                               //  We've done the loop ITERA times.
                                               //  Set non-overflowed outputs to 0 (inside xmm3). Here's how:
 	"movaps %%xmm2,%%xmm4\n\t"            //  xmm4 has all 1s in the non-overflowed pixels...
-	"xorps  %6,%%xmm4\n\t"                //  xmm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
+	"xorps  %5,%%xmm4\n\t"                //  xmm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
 	"andps  %%xmm4,%%xmm3\n\t"            //  zero out the xmm3 parts that belong to non-overflowed (set to black)
 	"jmp    2f\n\t"                       //  And jump to end of everything, where xmm3 is written into outputs
 
@@ -177,7 +177,7 @@ void CoreLoopFloat(double xcur, double ycur, double xstep, unsigned char **p)
 
 	"2:\n\t"
 	"movaps %%xmm3,%0\n\t"
-	:"=m"(outputs[0]),"=m"(outputs[2])
+	:"=m"(outputs[0])
 	:"m"(re[0]),"m"(im[0]),"m"(foursf[0]),"m"(onesf[0]),"m"(allbits[0]),"i"(ITERA)
 	:"%eax","%ebx","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","xmm8","xmm9","xmm10","memory");
 
