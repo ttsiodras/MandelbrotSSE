@@ -201,7 +201,6 @@ Finally, come back to this source folder, and compile the XaoS
 version:
 
     $ ./configure --host=x86_64-w64-mingw32 \
-            --disable-sse --disable-sse2 --disable-ssse3 \
             --with-sdl-prefix=/usr/local/packages/SDL-1.2.15-win32 \
             --disable-sdltest
     $ make

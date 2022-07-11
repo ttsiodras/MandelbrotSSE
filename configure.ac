@@ -1,4 +1,4 @@
-AC_INIT([mandelSSE], [2.6], [ttsiodras@gmail.com])
+AC_INIT([mandelSSE], [2.7], [ttsiodras@gmail.com])
 
 AC_LANG(C++)
 AC_CONFIG_HEADERS([src/config.h])

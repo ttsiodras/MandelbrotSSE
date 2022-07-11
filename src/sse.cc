@@ -89,6 +89,8 @@ void CoreLoopDoubleDefault(double xcur, double ycur, double xstep, unsigned char
     *(*p)++ = k1[3];
 }
 
+#ifdef __x86_64__
+
 void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p)
 {
     DECLARE_ALIGNED(32,double,re[4]);
@@ -179,3 +181,4 @@ void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p
     *(*p)++ = outputs[2];
     *(*p)++ = outputs[3];
 }
+#endif

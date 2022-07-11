@@ -104,8 +104,13 @@ int main(int argc, char *argv[])
         puts("[-] FPS Limit:  unlimited");
     else
         printf("[-] FPS Limit:  %d frames/sec\n", fps);
-    CoreLoopDouble =  (__builtin_cpu_supports("avx")) ? CoreLoopDoubleAVX : CoreLoopDoubleDefault;
-    printf("[-] Mode: %s\n", (__builtin_cpu_supports("avx")) ? "AVX" : "non-AVX");
+#ifdef __x86_64__
+    CoreLoopDouble = __builtin_cpu_supports("avx") ? CoreLoopDoubleAVX : CoreLoopDoubleDefault;
+    printf("[-] Mode: %s\n", __builtin_cpu_supports("avx") ? "AVX" : "non-AVX");
+#else
+    CoreLoopDouble = CoreLoopDoubleDefault;
+    printf("[-] Mode: %s\n", "non-AVX");
+#endif
 
     init256();
 
