@@ -27,6 +27,7 @@ int compare_points(const void *p1, const void *p2)
         0;
 }
 
+__attribute__((target_clones("default","avx")))
 void mandel(
     double xld, double yld, double xru, double yru,
     double percentageOfPixelsToRedraw)
@@ -232,6 +233,7 @@ void mandel(
     SDL_UpdateRect(surface, 0, 0, MAXX, MAXY);
 }
 
+__attribute__((target_clones("default","avx")))
 double autopilot()
 {
     static double interesting_points[][2] = {
@@ -294,6 +296,7 @@ double autopilot()
     return ((double)frames)*1000.0/ticks;
 }
 
+__attribute__((target_clones("default","avx")))
 double mousedriven()
 {
     int x,y;

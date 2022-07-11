@@ -18,8 +18,7 @@ DECLARE_ALIGNED(16,double,fours[4]) = { 4.0, 4.0, 4.0, 4.0 };
 
 DECLARE_ALIGNED(32,unsigned,allbits[8]) = {0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF};
 
-__attribute__((target("default")))
-void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
+void CoreLoopDoubleDefault(double xcur, double ycur, double xstep, unsigned char **p)
 {
 
 #define CLEAR_ARRAY(x) memset(&x, 0, sizeof(x))
@@ -90,8 +89,7 @@ void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
     *(*p)++ = k1[3];
 }
 
-__attribute__((target("avx")))
-void CoreLoopDouble(double xcur, double ycur, double xstep, unsigned char **p)
+void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p)
 {
     DECLARE_ALIGNED(32,double,re[4]);
     DECLARE_ALIGNED(32,double,im[4]);

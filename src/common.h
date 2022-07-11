@@ -30,6 +30,9 @@ GLOBAL SDL_Surface *surface;
 // The surface buffer; this is where we place our pixel data in
 GLOBAL Uint8 *buffer;
 
+// Dispatching in AVX/non-AVX code.
+GLOBAL void (*CoreLoopDouble)(double xcur, double ycur, double xstep, unsigned char **p);
+
 // Print message and exit
 void panic(const char *fmt, ...);
 

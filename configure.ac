@@ -39,17 +39,13 @@ AX_CXXFLAGS_GCC_OPTION(-fomit-frame-pointer)
 AX_CXXFLAGS_GCC_OPTION(-ffast-math)
 AX_CXXFLAGS_GCC_OPTION(-funsafe-math-optimizations)
 AX_CXXFLAGS_GCC_OPTION(-mtune=native)
+AX_CXXFLAGS_GCC_OPTION(-mrecip)
 
 # GCC support for -flto is still buggy, internal compiler error triggered...
 #        AX_CXXFLAGS_GCC_OPTION(-flto)
 #	 AX_CHECK_LINKER_FLAGS(-fwhole-program,[WHOLEPROGRAM="-fwhole-program"],[])
 #	 AC_SUBST(WHOLEPROGRAM)
 
-AX_CXXFLAGS_GCC_OPTION(-msse)
-AX_CXXFLAGS_GCC_OPTION(-msse2)
-AX_CXXFLAGS_GCC_OPTION(-mavx)
-AX_CXXFLAGS_GCC_OPTION(-mrecip)
-AX_CXXFLAGS_GCC_OPTION(-mfpmath=sse)
 CXXFLAGS="$CXXFLAGS -DNDEBUG"
 
 AM_PROG_CC_C_O
