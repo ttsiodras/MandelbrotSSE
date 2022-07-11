@@ -1,7 +1,7 @@
 #include "common.h"
 
 // Helper to report a fatal error
-void panic(char *fmt, ...)
+void panic(const char *fmt, ...)
 {
     va_list arg;
 

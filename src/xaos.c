@@ -81,8 +81,8 @@ void mandel(
         // And we need to do it for this frame, and the previous frame.
         // Ergo, allocate two buffers for each.
         for (i=0; i<2; i++) {
-            xcoords[i] = malloc(MAXX*sizeof(double));
-            ycoords[i] = malloc(MAXY*sizeof(double));
+            xcoords[i] = new double[MAXX];
+            ycoords[i] = new double[MAXY];
 	    if (!xcoords[i] || !ycoords[i])
 	       panic("Out of memory");
             memset(xcoords[i], 0, MAXX*sizeof(double));
@@ -90,7 +90,7 @@ void mandel(
 
             // We also need two screen buffers - one to draw in,
             // and one with the old frame.
-            bufferMem[i] = malloc(MAXX*MAXY);
+            bufferMem[i] = new Uint8[MAXX*MAXY];
 	    if (!bufferMem[i])
 	       panic("Out of memory");
         }
@@ -99,15 +99,15 @@ void mandel(
         // it will be -1 if the xcoords/ycoords are too different
         // from those of the previous frame (forcing a recalculation).
         // Otherwise, it will be an index into the "close enough" pixel.
-        xlookup = malloc(MAXX*sizeof(int));
-        ylookup = malloc(MAXY*sizeof(int));
+        xlookup = new int[MAXX];
+        ylookup = new int[MAXY];
         if (!xlookup || !ylookup)
            panic("Out of memory");
 
         // To determine the pixels whose coordinates are close enough to
         // those of the previous frame, MAXX slots will suffice;
         // for both X and Y directions, since MAXX > MAXY.
-        points = malloc(MAXX*sizeof(Point));
+        points = new Point[MAXX];
 	if (!points)
            panic("Out of memory");
     }
@@ -206,20 +206,24 @@ void mandel(
         int yclose = ylookup[i];
         // Start moving from xld to xru, one xstep at a time
         xcur = xld;
-        for (j=0; j<MAXX; j+=2) {
+        for (j=0; j<MAXX; j+=4) {
             // if both the xlookup and ylookup indicate that we can
             // lookup a pixel from the old frame...
             int xclose = xlookup[j];
             int xclose2 = xlookup[j+1];
-            if (xclose != -1 && xclose2 != -1 && yclose != -1) {
+            int xclose3 = xlookup[j+2];
+            int xclose4 = xlookup[j+3];
+            if (xclose != -1 && xclose2 != -1 && xclose3 != -1 && xclose4 != -1 && yclose != -1) {
                 // ...then just re-use it!
                 *p++ = bufferMem[bufIdx^1][yclose*MAXX + xclose];
                 *p++ = bufferMem[bufIdx^1][yclose*MAXX + xclose2];
+                *p++ = bufferMem[bufIdx^1][yclose*MAXX + xclose3];
+                *p++ = bufferMem[bufIdx^1][yclose*MAXX + xclose4];
             } else {
                 // Otherwise, perform a full computation.
                 CoreLoopDouble(xcur, ycur, xstep, &p);
             }
-            xcur += 2*xstep;
+            xcur += 4*xstep;
         }
     }
     // Copy the memory-based buffer into the SDL one...
@@ -228,7 +232,7 @@ void mandel(
     SDL_UpdateRect(surface, 0, 0, MAXX, MAXY);
 }
 
-int autopilot()
+double autopilot()
 {
     static double interesting_points[][2] = {
         {-0.72996052273553402312, -0.24047620199671820851},
@@ -242,7 +246,8 @@ int autopilot()
         sizeof(interesting_points) / sizeof(interesting_points[0]);
     int start_idx = rand() % total_interesting_points;
 
-    int i = 0;
+    int frames = 0;
+    unsigned long ticks = 0;
     while(1) {
         // Where shall we zoom this time?
         int rand_idx = start_idx % total_interesting_points;
@@ -261,6 +266,7 @@ int autopilot()
             unsigned st = SDL_GetTicks();
             mandel(xld, yld, xru, yru, percentage_of_pixels);
             unsigned en = SDL_GetTicks();
+            ticks += en-st;
 
             // After the 1st frame, re-use 99.25% of the pixels:
             percentage_of_pixels = 0.75;
@@ -272,7 +278,8 @@ int autopilot()
             int x,y;
             int result = kbhit(&x, &y);
             if (result == 1)
-                return i;
+                return ((double)frames)*1000.0/ticks;
+                
             // Did we zoom too much?
             double xrange = xru-xld;
             if (xrange < ZOOM_LIMIT)
@@ -281,34 +288,41 @@ int autopilot()
             xru += (targetx - xru)/100.;
             yld += (targety - yld)/100.;
             yru += (targety - yru)/100.;
-            i++;
+            frames++;
         }
     }
+    return ((double)frames)*1000.0/ticks;
 }
 
-int mousedriven()
+double mousedriven()
 {
     int x,y;
     double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
-    unsigned time_since_we_moved = 0;
+    unsigned time_since_we_moved = SDL_GetTicks();
     int frames = 0;
+    unsigned long ticks = 0;
 
     while(1) {
-        frames++;
         if (SDL_GetTicks() - time_since_we_moved > 200)
             // If we haven't moved for more than 200ms,
             // go to sleep - no need to waste the CPU
             SDL_Delay(minimum_ms_per_frame);
-        else if (SDL_GetTicks() - time_since_we_moved > 50)
+        else if (SDL_GetTicks() - time_since_we_moved > 50) {
             // if we haven't moved for 50 to 200ms,
             // draw an accurate frame (0% reuse)
+            unsigned st = SDL_GetTicks();
             mandel(xld, yld, xru, yru, 100);
-        else {
+            unsigned en = SDL_GetTicks();
+            ticks += en-st;
+            frames++;
+        } else {
             // Otherwise draw a low-accuracy frame
             // (reuse 99.25% of the pixels)
             unsigned st = SDL_GetTicks();
             mandel(xld, yld, xru, yru, 0.75);
             unsigned en = SDL_GetTicks();
+            ticks += en-st;
+            frames++;
             // Limit frame rate to 60 fps.
             if (en - st < minimum_ms_per_frame)
                 SDL_Delay(minimum_ms_per_frame - en + st);
@@ -333,8 +347,6 @@ int mousedriven()
         }
     }
     // Inform point reached, for potential autopilot target
-    printf("[-]\n[-] Reached final point: %2.20f, %2.20f\n",
-           (xru+xld)/2., (yru+yld)/2.);
-    return frames;
+    return ((double)frames)*1000.0/ticks;
 }
 

@@ -31,7 +31,7 @@ GLOBAL SDL_Surface *surface;
 GLOBAL Uint8 *buffer;
 
 // Print message and exit
-void panic(char *fmt, ...);
+void panic(const char *fmt, ...);
 
 // returns 1 if ESC is hit
 // returns 2 if left click (and updates xx and yy with mouse coord)
