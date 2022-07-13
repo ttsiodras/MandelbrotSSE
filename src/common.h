@@ -24,11 +24,13 @@ GLOBAL long MAXX, MAXY;
 // Default value set in getopt parsing in main.
 GLOBAL unsigned minimum_ms_per_frame;
 
-// SDL surface we draw in
+// SDL stuff...
+GLOBAL SDL_Window *window;
+GLOBAL SDL_Renderer *renderer;
 GLOBAL SDL_Surface *surface;
 
-// The surface buffer; this is where we place our pixel data in
-GLOBAL Uint8 *buffer;
+// Window title
+GLOBAL const char *windowTitle;
 
 // Dispatching in AVX/non-AVX code.
 GLOBAL void (*CoreLoopDouble)(double xcur, double ycur, double xstep, unsigned char **p);

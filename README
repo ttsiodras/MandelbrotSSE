@@ -9,7 +9,7 @@ COMPILE/INSTALL/RUN
 Windows
 -------
 Windows users can download and run a pre-compiled Windows binary
-[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.7/mandelSSE-win32-2.7.zip).
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.8/mandelSSE-win32-2.8.zip).
 
 After decompressing, you can simply execute either one of the two .bat
 files. The 'autopilot' one zooms in a specific location, while the other
@@ -22,10 +22,12 @@ cross-compilation instructions later in this document.
 For Linux/BSD/OSX users
 -----------------------
 
-Make sure you have libSDL installed - then...
+Make sure you have libSDL2 installed - then...
 
     $ ./configure
     $ make
+
+You can then simply...
 
     $ src/mandelSSE -h
 
@@ -40,7 +42,7 @@ Make sure you have libSDL installed - then...
     If WIDTH and HEIGHT are not provided, they default to: 1024 768
 
     $ src/mandelSSE
-    (Runs in autopilot in 1024x768 window, using XaoS)
+    (Runs in autopilot in a 1024x768 window)
 
     $ src/mandelSSE -m 1280 720
     (Runs in mouse-driven mode, in a 1280x720 window)
@@ -183,29 +185,27 @@ Have a look!
 
 Cross compiling for Windows via MinGW
 -------------------------------------
-After decompressing the SDL 1.2.15 tarball, install MinGW:
+After decompressing the SDL 2.0.22 tarball, install MinGW:
 
     $ sudo apt install gcc-mingw-w64
 
 Then download the source code of libSDL and compile it as follows:
 
-    $ cd SDL-1.2.15
-    $ ./configure --host=x86_64-w64-mingw32 --disable-dga \
-            --disable-video-dga --disable-video-x11-dgamouse \
+    $ cd SDL-2.0.22
+    $ ./configure --host=x86_64-w64-mingw32 \
             --disable-video-x11 --disable-x11-shared \
-            --prefix=/usr/local/packages/SDL-1.2.15-win32
+            --prefix=/usr/local/packages/SDL-2.0.22-win32
     $ make
     $ sudo make install
 
-Finally, come back to this source folder, and compile the XaoS
-version:
+Finally, come back to this source folder, and compile:
 
     $ ./configure --host=x86_64-w64-mingw32 \
-            --with-sdl-prefix=/usr/local/packages/SDL-1.2.15-win32 \
+            --with-sdl-prefix=/usr/local/packages/SDL-2.0.22-win32 \
             --disable-sdltest
     $ make
     $ cp src/mandelSSE.exe \
-            /usr/local/packages/SDL-1.2.15-win32/bin/SDL.dll \
+            /usr/local/packages/SDL-2.0.22-win32/bin/SDL.dll \
             /some/path/for/Windows/
 
 MISC

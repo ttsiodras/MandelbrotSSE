@@ -234,9 +234,18 @@ void mandel(
         }
     }
     // Copy the memory-based buffer into the SDL one...
-    memcpy(buffer, bufferMem[bufIdx], MAXX*MAXY);
+    Uint8 *pixels = (Uint8*)surface->pixels;
+    Uint8 *src = bufferMem[bufIdx];
+    for (int i=0; i<MAXY; i++) {
+        memcpy(pixels, src, MAXX);
+        src += MAXX;
+        pixels += surface->pitch;
+    }
     // ...and blit it on the screen.
-    SDL_UpdateRect(surface, 0, 0, MAXX, MAXY);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+    SDL_DestroyTexture(texture);
 }
 
 AUTO_DISPATCH

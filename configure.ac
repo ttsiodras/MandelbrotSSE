@@ -1,4 +1,4 @@
-AC_INIT([mandelSSE], [2.7], [ttsiodras@gmail.com])
+AC_INIT([mandelSSE], [2.8], [ttsiodras@gmail.com])
 
 AC_LANG(C++)
 AC_CONFIG_HEADERS([src/config.h])
@@ -84,9 +84,9 @@ if test x"${HAVE_OPENMP}" = xyes ; then
     AC_SUBST(OPENMP_LIBS)
 fi
 
-# Check for SDL (minimum: 1.2.0)
-SDL_VERSION=1.2.0
-AM_PATH_SDL($SDL_VERSION, :,
+# Check for SDL (minimum: 2.0.0)
+SDL_VERSION=2.0.0
+AM_PATH_SDL2($SDL_VERSION, :,
             AC_MSG_ERROR([*** SDL version $SDL_VERSION or later was not found!]))
 AC_SUBST(SDL_CXXFLAGS)
 AC_SUBST(SDL_LIBS)

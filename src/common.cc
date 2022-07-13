@@ -18,16 +18,23 @@ void init256()
         panic("[x] Couldn't initialize SDL: %d\n", SDL_GetError());
     atexit(SDL_Quit);
 
-    surface = SDL_SetVideoMode(MAXX,
-                               MAXY, 8, SDL_HWSURFACE | SDL_HWPALETTE);
-    if (!surface)
-        panic("[x] Couldn't set video mode: %d", SDL_GetError());
+    window = SDL_CreateWindow(
+        windowTitle,
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        MAXX, MAXY, 0);
+    if (!window)
+        panic("[x] Couldn't create window: %d", SDL_GetError());
 
-    if (SDL_MUSTLOCK(surface)) {
-        if (SDL_LockSurface(surface) < 0)
-            panic("[x] Couldn't lock surface: %d", SDL_GetError());
-    }
-    buffer = (Uint8*)surface->pixels;
+    if (!minimum_ms_per_frame)
+        renderer = SDL_CreateRenderer(window, -1, 0);
+    else
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+    if (!renderer)
+        panic("[x] Couldn't create renderer: %d", SDL_GetError());
+
+    surface = SDL_CreateRGBSurface(
+        SDL_SWSURFACE, MAXX, MAXY, 8, 0, 0, 0, 0);
 
     // A palette for Mandelbrot zooms...
     {
@@ -71,11 +78,13 @@ void init256()
             palette[value].r = red;
             palette[value].g = green;
             palette[value].b = blue;
+            palette[value].a = 255;
         }
         palette[0].r = 0;
         palette[0].g = 0;
         palette[0].b = 0;
-        SDL_SetColors(surface, palette, 0, 256);
+        palette[0].a = 255;
+        SDL_SetPaletteColors(surface->format->palette, palette, 0, 256);
     }
 }
 
@@ -87,8 +96,8 @@ int kbhit(int *xx, int *yy)
     int x,y;
     SDL_Event event;
 
-    Uint8 *keystate = SDL_GetKeyState(NULL);
-    if ( keystate[SDLK_ESCAPE] )
+    const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+    if ( keystate[SDL_SCANCODE_ESCAPE] )
         return 1;
 
     if(SDL_PollEvent(&event)) {

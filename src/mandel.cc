@@ -114,12 +114,10 @@ int main(int argc, char *argv[])
 
     init256();
 
-    const char *usage;
     if (bAutoPilot)
-        usage = "ESC to quit...";
+        windowTitle = "ESC to quit...";
     else
-        usage = "Left click to zoom-in, right-click to zoom-out, ESC to quit...";
-    SDL_WM_SetCaption(usage, usage);
+        windowTitle = "Left click to zoom-in, right-click to zoom-out, ESC to quit...";
 
     double fps_reported;
     if (bAutoPilot) {
