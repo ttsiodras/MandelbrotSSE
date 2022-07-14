@@ -28,7 +28,7 @@ int compare_points(const void *p1, const void *p2)
 }
 
 #if defined(__x86_64__) && !defined(__WIN64__)
-#define AUTO_DISPATCH __attribute__((target_clones("default","avx")))
+#define AUTO_DISPATCH __attribute__((target_clones("default","sse","avx")))
 #else
 #define AUTO_DISPATCH
 #endif

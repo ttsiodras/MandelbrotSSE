@@ -9,7 +9,7 @@ COMPILE/INSTALL/RUN
 Windows
 -------
 Windows users can download and run a pre-compiled Windows binary
-[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.9/mandelSSE-win32-2.9.zip).
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.10/mandelSSE-win32-2.10.zip).
 
 After decompressing, you can simply execute either one of the two .bat
 files. The 'autopilot' one zooms in a specific location, while the other
@@ -32,12 +32,15 @@ You can then simply...
     $ src/mandelSSE -h
     Usage: ./src/mandelSSE [-a|-m] [-h] [-b] [-f rate] [WIDTH HEIGHT]
     Where:
-            -h	Show this help message
-            -m	Run in mouse-driven mode
-            -a	Run in autopilot mode (default)
-            -b	Run in benchmark mode (implies autopilot)
-            -f fps	Enforce upper bound of frames per second (default: 60)
-                    (use 0 to run at full possible speed)
+        -h      Show this help message
+        -m      Run in mouse-driven mode
+        -a      Run in autopilot mode (default)
+        -b      Run in benchmark mode (implies autopilot)
+        -v      Force use of AVX
+        -s      Force use of SSE
+        -d      Force use of non-AVX, non-SSE code
+        -f fps  Enforce upper bound of frames per second (default: 60)
+                (use 0 to run at full possible speed)
 
     If WIDTH and HEIGHT are not provided, they default to: 1024 768
 

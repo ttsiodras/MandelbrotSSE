@@ -26,12 +26,15 @@
 
 void usage(char *argv[])
 {
-    printf("Usage: %s [-a|-m] [-h] [-b] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
+    printf("Usage: %s [-a|-m] [-h] [-b] [-v|-s|-d] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
     puts("Where:");
     puts("\t-h\tShow this help message");
     puts("\t-m\tRun in mouse-driven mode");
     puts("\t-a\tRun in autopilot mode (default)");
     puts("\t-b\tRun in benchmark mode (implies autopilot)");
+    puts("\t-v\tForce use of AVX");
+    puts("\t-s\tForce use of SSE");
+    puts("\t-d\tForce use of non-AVX, non-SSE code");
     puts("\t-f fps\tEnforce upper bound of frames per second (default: 60)");
     puts("\t      \t(use 0 to run at full possible speed)\n");
     puts("If WIDTH and HEIGHT are not provided, they default to: 1024 768");
@@ -42,8 +45,9 @@ int main(int argc, char *argv[])
 {
     int opt, fps = 60;
     bool autoPilot = true, benchmark = false;
+    bool forceAVX = false, forceSSE = false, forceDefault = false;
 
-    while ((opt = getopt(argc, argv, "hmabf:")) != -1) {
+    while ((opt = getopt(argc, argv, "hmabvsdf:")) != -1) {
         switch (opt) {
             case 'h':
                 usage(argv);
@@ -57,6 +61,15 @@ int main(int argc, char *argv[])
             case 'b':
                 autoPilot = true;
                 benchmark = true;
+                break;
+            case 'v':
+                forceAVX = true;
+                break;
+            case 's':
+                forceSSE = true;
+                break;
+            case 'd':
+                forceDefault = true;
                 break;
             case 'f':
                 if (1 != sscanf(optarg, "%d", &fps))
@@ -112,8 +125,21 @@ int main(int argc, char *argv[])
     else
         printf("[-] FPS Limit:  %d frames/sec\n", fps);
 #ifdef __x86_64__
-    CoreLoopDouble = __builtin_cpu_supports("avx") ? CoreLoopDoubleAVX : CoreLoopDoubleDefault;
-    printf("[-] Mode: %s\n", __builtin_cpu_supports("avx") ? "AVX" : "non-AVX");
+    if (forceAVX)
+        CoreLoopDouble = CoreLoopDoubleAVX;
+    else if (forceSSE)
+        CoreLoopDouble = CoreLoopDoubleSSE;
+    else if (forceDefault)
+        CoreLoopDouble = CoreLoopDoubleDefault;
+    else
+        CoreLoopDouble = 
+            __builtin_cpu_supports("avx") ?  CoreLoopDoubleAVX
+            : __builtin_cpu_supports("sse") ?  CoreLoopDoubleSSE
+            : CoreLoopDoubleDefault;
+    printf("[-] Mode: %s\n", 
+        CoreLoopDouble == CoreLoopDoubleAVX ? "AVX" 
+        : CoreLoopDouble == CoreLoopDoubleSSE ? "SSE" 
+        : "non-AVX/non-SSE");
 #else
     CoreLoopDouble = CoreLoopDoubleDefault;
     printf("[-] Mode: %s\n", "non-AVX");
