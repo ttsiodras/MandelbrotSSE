@@ -249,7 +249,7 @@ void mandel(
 }
 
 AUTO_DISPATCH
-double autopilot()
+double autopilot(bool benchmark)
 {
     static double interesting_points[][2] = {
         {-0.72996052273553402312, -0.24047620199671820851},
@@ -261,7 +261,8 @@ double autopilot()
     };
     const int total_interesting_points =
         sizeof(interesting_points) / sizeof(interesting_points[0]);
-    int start_idx = rand() % total_interesting_points;
+    int start_idx =
+        benchmark ? 0 : (rand() % total_interesting_points);
 
     int frames = 0;
     unsigned long ticks = 0;
@@ -294,7 +295,7 @@ double autopilot()
 
             int x,y;
             int result = kbhit(&x, &y);
-            if (result == 1)
+            if (result == SDL_QUIT)
                 return ((double)frames)*1000.0/ticks;
                 
             // Did we zoom too much?
@@ -307,6 +308,8 @@ double autopilot()
             yru += (targety - yru)/100.;
             frames++;
         }
+        if (benchmark)
+            break;
     }
     return ((double)frames)*1000.0/ticks;
 }
@@ -327,17 +330,17 @@ double mousedriven()
             SDL_Delay(minimum_ms_per_frame);
         else if (SDL_GetTicks() - time_since_we_moved > 50) {
             // if we haven't moved for 50 to 200ms,
-            // draw an accurate frame (0% reuse)
+            // draw an accurate frame (0% reuse from previous frame)
             unsigned st = SDL_GetTicks();
-            mandel(xld, yld, xru, yru, 100);
+            mandel(xld, yld, xru, yru, 100.0);
             unsigned en = SDL_GetTicks();
             ticks += en-st;
             frames++;
         } else {
             // Otherwise draw a low-accuracy frame
-            // (reuse 99.25% of the pixels)
+            // (reuse 99.0% of the pixels)
             unsigned st = SDL_GetTicks();
-            mandel(xld, yld, xru, yru, 0.75);
+            mandel(xld, yld, xru, yru, 1.0);
             unsigned en = SDL_GetTicks();
             ticks += en-st;
             frames++;
@@ -346,22 +349,25 @@ double mousedriven()
                 SDL_Delay(minimum_ms_per_frame - en + st);
         }
         int result = kbhit(&x, &y);
-        if (result == 1)
+        if (result == SDL_QUIT)
             break;
-        else if (result == 2 || result == 3) {
+        else if (result == SDL_BUTTON_LEFT || result == SDL_BUTTON_RIGHT) {
             time_since_we_moved = SDL_GetTicks();
-            double ratiox = ((double)x)/MAXX;
-            double ratioy = ((double)y)/MAXY;
+            double ratiox = ((double)x)/window_width;
+            double ratioy = ((double)y)/window_height;
             double xrange = xru-xld;
             double yrange = yru-yld;
-            double direction = result==2?1.:-1.;
+            double direction = result==SDL_BUTTON_LEFT ? 1. : -1.;
             // Don't zoom beyond the level allowed by IEEE754
-            if (result == 2 && xrange < ZOOM_LIMIT)
+            if (result == SDL_BUTTON_LEFT && xrange < ZOOM_LIMIT)
                 continue;
             xld += direction*0.01*ratiox*xrange;
             xru -= direction*0.01*(1.-ratiox)*xrange;
             yld += direction*0.01*(1.-ratioy)*yrange;
             yru -= direction*0.01*ratioy*yrange;
+        } else if (result == SDL_WINDOWEVENT) {
+            // force a redraw - e.g. the user just resized the window
+            time_since_we_moved = SDL_GetTicks();
         }
     }
     // Inform point reached, for potential autopilot target

@@ -12,17 +12,17 @@ void panic(const char *fmt, ...)
 }
 
 // Creates the window and sets up the palette of colors.
-void init256()
+void init256colorsMode(const char *windowTitle)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         panic("[x] Couldn't initialize SDL: %d\n", SDL_GetError());
     atexit(SDL_Quit);
 
-    window = SDL_CreateWindow(
+    SDL_Window *window = SDL_CreateWindow(
         windowTitle,
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        MAXX, MAXY, 0);
+        MAXX, MAXY, SDL_WINDOW_RESIZABLE);
     if (!window)
         panic("[x] Couldn't create window: %d", SDL_GetError());
 
@@ -88,38 +88,61 @@ void init256()
     }
 }
 
-// returns 1 if ESC is hit
-// returns 2 if left click (and updates xx and yy with mouse coord)
-// returns 3 if right click (and updates xx and yy with mouse coord)
+// returns SDL_QUIT if ESC is hit or the user closes the window
+// returns SDL_BUTTON_LEFT if left click (and updates xx and yy with mouse coord)
+// returns SDL_BUTTON_RIGHT if right click (and updates xx and yy with mouse coord)
+// returns SDL_WINDOWEVENT if we need to repaint (e.g. resize)
 int kbhit(int *xx, int *yy)
 {
-    int x,y;
     SDL_Event event;
+    static bool lBtnDown, rBtnDown;
 
     const Uint8 *keystate = SDL_GetKeyboardState(NULL);
     if ( keystate[SDL_SCANCODE_ESCAPE] )
-        return 1;
+        return SDL_QUIT;
 
-    if(SDL_PollEvent(&event)) {
+    while(SDL_PollEvent(&event)) {
         switch(event.type) {
         case SDL_QUIT:
-            return 1;
+            return SDL_QUIT;
+            break;
+        case SDL_WINDOWEVENT:
+            if (event.window.event == SDL_WINDOWEVENT_RESIZED ||
+                event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+            {
+                window_width = event.window.data1;
+                window_height = event.window.data2;
+            }
+            return SDL_WINDOWEVENT;
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                lBtnDown = true;
+                *xx = event.button.x;
+                *yy = event.button.y;
+            } else if (event.button.button == SDL_BUTTON_RIGHT) {
+                rBtnDown = true;
+                *xx = event.button.x;
+                *yy = event.button.y;
+            }
+            break;
+        case SDL_MOUSEBUTTONUP:
+            if (event.button.button == SDL_BUTTON_LEFT)
+                lBtnDown = false;
+            else if (event.button.button == SDL_BUTTON_RIGHT)
+                rBtnDown = false;
+            break;
+        case SDL_MOUSEMOTION:
+            *xx = event.motion.x;
+            *yy = event.motion.y;
             break;
         default:
             break;
         }
     }
-
-    Uint8 btn = SDL_GetMouseState (&x, &y);
-    if (btn & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-        *xx = x;
-        *yy = y;
-        return 2;
-    }
-    if (btn & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-        *xx = x;
-        *yy = y;
-        return 3;
-    }
+    if (lBtnDown)
+        return SDL_BUTTON_LEFT;
+    if (rBtnDown)
+        return SDL_BUTTON_RIGHT;
     return 0;
 }

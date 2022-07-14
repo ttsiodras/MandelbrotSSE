@@ -1,7 +1,7 @@
 #ifndef __MANDEL_XAOS_H__
 #define __MANDEL_XAOS_H__
 
-double autopilot();
+double autopilot(bool benchmark);
 double mousedriven();
 void mandel(
     double xld, double yld, double xru, double yru,

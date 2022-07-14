@@ -9,7 +9,7 @@ COMPILE/INSTALL/RUN
 Windows
 -------
 Windows users can download and run a pre-compiled Windows binary
-[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.8/mandelSSE-win32-2.8.zip).
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.9/mandelSSE-win32-2.9.zip).
 
 After decompressing, you can simply execute either one of the two .bat
 files. The 'autopilot' one zooms in a specific location, while the other
@@ -30,14 +30,14 @@ Make sure you have libSDL2 installed - then...
 You can then simply...
 
     $ src/mandelSSE -h
-
-    Usage: ./src/mandelSSE [-a|-m] [-h] [-f rate] [WIDTH HEIGHT]
+    Usage: ./src/mandelSSE [-a|-m] [-h] [-b] [-f rate] [WIDTH HEIGHT]
     Where:
-        -h      Show this help message
-        -m      Run in mouse-driven mode
-        -a      Run in autopilot mode (default)
-        -f fps  Enforce upper bound of frames per second (default: 60)
-                (use 0 to run at full possible speed)
+            -h	Show this help message
+            -m	Run in mouse-driven mode
+            -a	Run in autopilot mode (default)
+            -b	Run in benchmark mode (implies autopilot)
+            -f fps	Enforce upper bound of frames per second (default: 60)
+                    (use 0 to run at full possible speed)
 
     If WIDTH and HEIGHT are not provided, they default to: 1024 768
 
@@ -52,6 +52,12 @@ For ultimate speed, disable the frame limiter - by default, you are
 limited to 60fps:
 
     $ src/mandelSSE -m -f 0 1280 720
+
+The benchmarking mode (-b) does this automatically.
+If you want to benchmark your CPU only (and not display anything)
+tell SDL you don't care about displaying the fractal:
+
+    $ SDL_VIDEODRIVER=dummy src/mandelSSE -b 512 384
 
 WHAT IS THIS, AGAIN?
 ====================
@@ -98,9 +104,8 @@ Over the last two decades, I kept coming back to this, enhancing it.
   amazing speedups.
 
 - In July 2022, I optimised further with AVX instructions (+80% speed
-  in CoreLoopDouble). I kept the old (portable) code, that detects
-  at compile-time whether SSE instructions are there or not, in the
-  ["portable" branch](https://github.com/ttsiodras/MandelbrotSSE/tree/portable).
+  in CoreLoopDouble). I also ported the code to libSDL2, which stopped
+  video tearing.
 
 FOR CODERS ONLY
 ===============

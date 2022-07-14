@@ -26,11 +26,12 @@
 
 void usage(char *argv[])
 {
-    printf("Usage: %s [-a|-m] [-h] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
+    printf("Usage: %s [-a|-m] [-h] [-b] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
     puts("Where:");
     puts("\t-h\tShow this help message");
     puts("\t-m\tRun in mouse-driven mode");
     puts("\t-a\tRun in autopilot mode (default)");
+    puts("\t-b\tRun in benchmark mode (implies autopilot)");
     puts("\t-f fps\tEnforce upper bound of frames per second (default: 60)");
     puts("\t      \t(use 0 to run at full possible speed)\n");
     puts("If WIDTH and HEIGHT are not provided, they default to: 1024 768");
@@ -39,18 +40,23 @@ void usage(char *argv[])
 
 int main(int argc, char *argv[])
 {
-    int opt, bAutoPilot = 1, fps = 60;
+    int opt, fps = 60;
+    bool autoPilot = true, benchmark = false;
 
-    while ((opt = getopt(argc, argv, "hmaxsf:")) != -1) {
+    while ((opt = getopt(argc, argv, "hmabf:")) != -1) {
         switch (opt) {
             case 'h':
                 usage(argv);
                 break;
             case 'm':
-                bAutoPilot = 0;
+                autoPilot = false;
                 break;
             case 'a':
-                bAutoPilot = 1;
+                autoPilot = true;
+                break;
+            case 'b':
+                autoPilot = true;
+                benchmark = true;
                 break;
             case 'f':
                 if (1 != sscanf(optarg, "%d", &fps))
@@ -80,7 +86,7 @@ int main(int argc, char *argv[])
         puts("[x] Too many parameters... Only MAXX and MAXY expected.\n\n");
         usage(argv);
     }
-    if (!fps)
+    if (!fps || benchmark)
         // run with no brakes!
         minimum_ms_per_frame = 0;
     else {
@@ -94,11 +100,12 @@ int main(int argc, char *argv[])
 
     printf("\n[-] Mandelbrot Zoomer by Thanassis, version: %s\n", version);
         puts("[-] NOTE: you can launch with option '-h' to see available options.");
-    if (!bAutoPilot)
+    if (!autoPilot)
         puts("[-] e.g. you can use '-a' to enable autopilot.");
     else
         puts("[-] e.g. you can use '-m' to pilot with your mouse.");
-    printf("[-] Autopilot:  %s\n", bAutoPilot ? "On" : "Off");
+    printf("[-] Autopilot:  %s\n", autoPilot ? "On" : "Off");
+    printf("[-] Benchmark:  %s\n", benchmark ? "On" : "Off");
     printf("[-] Dimensions: %ld x %ld\n", MAXX, MAXY);
     if (!minimum_ms_per_frame)
         puts("[-] FPS Limit:  unlimited");
@@ -112,17 +119,17 @@ int main(int argc, char *argv[])
     printf("[-] Mode: %s\n", "non-AVX");
 #endif
 
-    init256();
-
-    if (bAutoPilot)
+    const char *windowTitle;
+    if (autoPilot)
         windowTitle = "ESC to quit...";
     else
-        windowTitle = "Left click to zoom-in, right-click to zoom-out, ESC to quit...";
+        windowTitle = "Left click/hold zooms-in, right zooms-out, ESC quits.";
+    init256colorsMode(windowTitle);
 
     double fps_reported;
-    if (bAutoPilot) {
+    if (autoPilot) {
         srand(time(NULL));
-        fps_reported = autopilot();
+        fps_reported = autopilot(benchmark);
     } else
         fps_reported = mousedriven();
     SDL_Quit();
