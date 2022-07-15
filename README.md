@@ -9,7 +9,7 @@ COMPILE/INSTALL/RUN
 Windows
 -------
 Windows users can download and run a pre-compiled Windows binary
-[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.10/mandelSSE-win32-2.10.zip).
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.11/mandelSSE-win32-2.11.zip).
 
 After decompressing, you can simply execute either one of the two .bat
 files. The 'autopilot' one zooms in a specific location, while the other
@@ -22,27 +22,18 @@ cross-compilation instructions later in this document.
 For Linux/BSD/OSX users
 -----------------------
 
-Make sure you have libSDL2 installed - then...
+Make sure you have libSDL2 installed. In Debian and its derivatives,
+like Ubuntu, just `sudo apt install libsdl2-dev`.
+
+Then, build the code - with...
 
     $ ./configure
     $ make
 
-You can then simply...
+Usage
+-----
 
-    $ src/mandelSSE -h
-    Usage: ./src/mandelSSE [-a|-m] [-h] [-b] [-f rate] [WIDTH HEIGHT]
-    Where:
-        -h      Show this help message
-        -m      Run in mouse-driven mode
-        -a      Run in autopilot mode (default)
-        -b      Run in benchmark mode (implies autopilot)
-        -v      Force use of AVX
-        -s      Force use of SSE
-        -d      Force use of non-AVX, non-SSE code
-        -f fps  Enforce upper bound of frames per second (default: 60)
-                (use 0 to run at full possible speed)
-
-    If WIDTH and HEIGHT are not provided, they default to: 1024 768
+You can then try these:
 
     $ src/mandelSSE
     (Runs in autopilot in a 1024x768 window)
@@ -51,8 +42,30 @@ You can then simply...
     (Runs in mouse-driven mode, in a 1280x720 window)
     (left-click zooms-in, right-click zooms out)
 
-For ultimate speed, disable the frame limiter - by default, you are
-limited to 60fps:
+Option `-h` gives you additional information about how to control
+the Mandelbrot zoomer:
+
+    $ ./src/mandelSSE -h
+
+    Usage: ./src/mandelSSE [-a|-m] [-h] [-b] [-v|-s|-d] [-i iter] [-p pct] [-f rate] [WIDTH HEIGHT]
+    Where:
+            -h      Show this help message
+            -m      Run in mouse-driven mode
+            -a      Run in autopilot mode (default)
+            -b      Run in benchmark mode (implies autopilot)
+            -v      Force use of AVX
+            -s      Force use of SSE
+            -d      Force use of non-AVX, non-SSE code
+            -i iter The maximum number of iterations of the Mandelbrot loop (default: 2048)
+            -p pct  The percentage of pixels computed per frame (default: 0.75)
+                    (the rest are copied from the previous frame)
+            -f fps  Enforce upper bound of frames per second (default: 60)
+                    (use 0 to run at full possible speed)
+
+    If WIDTH and HEIGHT are not provided, they default to: 1024 768
+
+For ultimate rendering speed, you can disable the frame limiter (option `-f`).
+By default, you are limited to 60fps:
 
     $ src/mandelSSE -m -f 0 1280 720
 
@@ -62,8 +75,28 @@ tell SDL you don't care about displaying the fractal:
 
     $ SDL_VIDEODRIVER=dummy src/mandelSSE -b 512 384
 
+Be mindful of your CPU's thermal throttling if you are benchmarking :-)
+Note that you can force AVX (-v), SSE (-s) or dumb floating point (-d)
+to see the speed impact made by our usage of special Intel instructions.
+
+You can also control:
+
+- the percentage of pixels actually computed per frame, with option `-p`.
+  If you e.g. pass `-p 0.5`, then 100-0.5 = 99.5% of the pixels will be
+  copied from the previous frame, and only 0.5% will be actually derived
+  through the Mandelbrot computations. Amazingly, this is enough for 
+  a decent quality fly-through zoom in the fractal.
+  By default, this is set to 0.75.
+
+- the number of Mandelbrot iterations (option `-i`). By default this is
+  set to 2048 to allow for decent zoom levels, but if you want to see
+  insane speeds, set this to something low, like 128; and disable the
+  frame limiter; i.e. use `-f 0 -i 128`.
+
 WHAT IS THIS, AGAIN?
 ====================
+
+Long story.
 
 When I got my hands on an SSE enabled processor (an Athlon-XP, back in 2002),
 I wanted to try out SSE programming... And over the better part of a weekend,
@@ -71,10 +104,14 @@ I created a simple implementation of a Mandelbrot zoomer in SSE assembly.
 I was glad to see that my code was almost 3 times faster than pure C.
 
 But that was just the beginning.
+
 Over the last two decades, I kept coming back to this, enhancing it.
 
 - I learned how to use the GNU autotools, and made it work on most Intel
-  platforms: checked with Linux, Windows (MinGW) and OpenBSD.
+  platforms: checked with Linux, Windows (MinGW) and OpenBSD. 
+  A decade later, I also tested it on Raspbian and Armbian; it works
+  fine in ARM machines as well. Autotools also allow me to cross-compile
+  for Windows (more on that below).
 
 - After getting acquainted with OpenMP, in Nov 2009 I added OpenMP #pragmas
   to run both the C and the SSE code in all cores/CPUs. The SSE code had to
@@ -82,7 +119,7 @@ Over the last two decades, I kept coming back to this, enhancing it.
   was worth it. The resulting frame rate - on a tiny Atom 330 running Arch
   Linux - sped up from 58 to 160 frames per second.
 
-- I then coded it in CUDA - a 75$ GPU card gave almost two orders of
+- I then coded it in CUDA - a 75$ GPU card gave me almost two orders of
   magnitude of speedup!
 
 - Then in May 2011, I made the code switch automatically from single precision
@@ -90,11 +127,11 @@ Over the last two decades, I kept coming back to this, enhancing it.
 
 - Around 2012 I added a significant optimization: avoiding fully calculating
   the Mandelbrot lake areas (black color) by drawing at 1/16 resolution and
-  skipping black areas in full res...
+  skipping black areas in the full resolution render.
 
 - I learned enough VHDL in 2018 to [code the algorithm inside a Spartan3
   FPGA](https://www.youtube.com/watch?v=yFIbjiOWYFY). That was quite a
-  [learning exercise](https://github.com/ttsiodras/MandelbrotInVHDL).
+  [learning experience](https://github.com/ttsiodras/MandelbrotInVHDL).
 
 - In September 2020 I [ported a fixed-point arithmetic](
   https://github.com/ttsiodras/Blue_Pill_Mandelbrot/) version of the
@@ -104,7 +141,7 @@ Over the last two decades, I kept coming back to this, enhancing it.
 - In October 2020, I implemented what I understood to be the XaoS algorithm;
   that is, re-using pixels from the previous frame to optimally update
   the next one. Especially in deep-dives and large windows, this delivered
-  amazing speedups.
+  amazing speedups; between 2 and 3 orders of magnitude.
 
 - In July 2022, I optimised further with AVX instructions (+80% speed
   in CoreLoopDouble). I also ported the code to libSDL2, which stopped
@@ -152,11 +189,15 @@ This used to be my main loop, right after I ported to SSE back in 2002:
         jz      short nomore      ; yes, we're done
 
         inc     ecx
-        cmp     ecx, 119
+        cmp     ecx, ITERATIONS
         jnz     short loop1
 
-The new AVX code (inside CoreLoopDouble) follows the same motif; except
-that it also includes periodicity checking, and uses the YMM registers.
+The new AVX code (inside CoreLoopDoubleAVX) follows the same motif;
+except that it also includes periodicity checking, and uses the YMM
+registers.
+
+The comments should help you follow what's happening... Basically,
+we compute 4 pixels at a time.
 
 XaoS
 ----
@@ -206,20 +247,24 @@ Then download the source code of libSDL and compile it as follows:
     $ make
     $ sudo make install
 
-Finally, come back to this source folder, and compile:
+Finally, come back to this source folder, and configure it like this:
 
     $ ./configure --host=x86_64-w64-mingw32 \
             --with-sdl-prefix=/usr/local/packages/SDL-2.0.22-win32 \
             --disable-sdltest
     $ make
     $ cp src/mandelSSE.exe \
-            /usr/local/packages/SDL-2.0.22-win32/bin/SDL.dll \
+            /usr/local/packages/SDL-2.0.22-win32/bin/SDL2.dll \
             /some/path/for/Windows/
+
+You can also get the "ingredients" (DLLs for SDL2, OpenMP, libstd++, etc)
+from the packaged release
+[here](https://github.com/ttsiodras/MandelbrotSSE/releases/download/2.11/mandelSSE-win32-2.11.zip).
 
 MISC
 ====
-Since it reports frame rate at the end, you can use this as a benchmark
-for AVX instructions - it puts the AVX registers under quite a load.
+Since it reports frame rate at the end (option `-b`), you can use this as
+a benchmark for AVX instructions - it puts the AVX registers under quite a load.
 
 I've also coded a
 [CUDA version](https://www.thanassis.space/mandelcuda-1.0.tar.bz2),

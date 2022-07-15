@@ -203,7 +203,7 @@ void mandel(
     }
 
     // Armed now with the xlookup and ylookup, we can render the frame.
-#pragma omp parallel for private(xcur, j)
+#pragma omp parallel for private(xcur, j) schedule(dynamic,1)
     for (int i=0; i<MAXY; i++) {
         // ...and start descending scanlines, from yru down to yld,
         // one ystep at a time.
@@ -216,11 +216,13 @@ void mandel(
         for (j=0; j<MAXX; j+=4) {
             // if both the xlookup and ylookup indicate that we can
             // lookup a pixel from the old frame...
-            int xclose = xlookup[j];
+            int xclose  = xlookup[j];
             int xclose2 = xlookup[j+1];
             int xclose3 = xlookup[j+2];
             int xclose4 = xlookup[j+3];
-            if (xclose != -1 && xclose2 != -1 && xclose3 != -1 && xclose4 != -1 && yclose != -1) {
+            if (xclose  != -1 && xclose2 != -1 &&
+                xclose3 != -1 && xclose4 != -1 && yclose != -1)
+            {
                 // ...then just re-use it!
                 *p++ = bufferMem[bufIdx^1][yclose*MAXX + xclose];
                 *p++ = bufferMem[bufIdx^1][yclose*MAXX + xclose2];
@@ -249,7 +251,7 @@ void mandel(
 }
 
 AUTO_DISPATCH
-double autopilot(bool benchmark)
+double autopilot(double percent, bool benchmark)
 {
     static double interesting_points[][2] = {
         {-0.72996052273553402312, -0.24047620199671820851},
@@ -286,8 +288,9 @@ double autopilot(bool benchmark)
             unsigned en = SDL_GetTicks();
             ticks += en-st;
 
-            // After the 1st frame, re-use 99.25% of the pixels:
-            percentage_of_pixels = 0.75;
+            // After the 1st frame, compute only 'percent' pixels
+            // Copy the others from the previous frame
+            percentage_of_pixels = percent;
 
             // Limit frame rate to 60 fps.
             if (en - st < minimum_ms_per_frame)
@@ -311,47 +314,55 @@ double autopilot(bool benchmark)
         if (benchmark)
             break;
     }
+    printf("[-] Rendered %d frames.\n", frames);
     return ((double)frames)*1000.0/ticks;
 }
 
 AUTO_DISPATCH
-double mousedriven()
+double mousedriven(double percent)
 {
     int x,y;
     double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
     unsigned time_since_we_moved = SDL_GetTicks();
+    bool drawn_full = false, moved = false;
     int frames = 0;
     unsigned long ticks = 0;
 
     while(1) {
-        if (SDL_GetTicks() - time_since_we_moved > 200)
-            // If we haven't moved for more than 200ms,
-            // go to sleep - no need to waste the CPU
-            SDL_Delay(minimum_ms_per_frame);
-        else if (SDL_GetTicks() - time_since_we_moved > 50) {
-            // if we haven't moved for 50 to 200ms,
-            // draw an accurate frame (0% reuse from previous frame)
+        if (!moved && (SDL_GetTicks() - time_since_we_moved > 200)) {
+            // if we haven't moved for more than 200ms
+            // then draw an accurate frame (0% reuse from previous frame)
+            if (!drawn_full) {
+                // But only do this ONCE.
+                drawn_full = true;
+                unsigned st = SDL_GetTicks();
+                mandel(xld, yld, xru, yru, 100.0);
+                unsigned en = SDL_GetTicks();
+                ticks += en-st;
+                frames++;
+                if (en - st < minimum_ms_per_frame)
+                    SDL_Delay(minimum_ms_per_frame - en + st);
+            } else
+                SDL_Delay(minimum_ms_per_frame);
+        } else if (moved) {
+            // Otherwise, if we moved, draw a low-accuracy frame: reuse pixels
+            // from previous frame, and only compute 'percent' new ones
+            drawn_full = false;
             unsigned st = SDL_GetTicks();
-            mandel(xld, yld, xru, yru, 100.0);
+            mandel(xld, yld, xru, yru, percent);
             unsigned en = SDL_GetTicks();
             ticks += en-st;
             frames++;
-        } else {
-            // Otherwise draw a low-accuracy frame
-            // (reuse 99.0% of the pixels)
-            unsigned st = SDL_GetTicks();
-            mandel(xld, yld, xru, yru, 1.0);
-            unsigned en = SDL_GetTicks();
-            ticks += en-st;
-            frames++;
-            // Limit frame rate to 60 fps.
+            // Limit frame rate to desired one (default: 60 fps)
             if (en - st < minimum_ms_per_frame)
                 SDL_Delay(minimum_ms_per_frame - en + st);
+            moved = false;
         }
         int result = kbhit(&x, &y);
         if (result == SDL_QUIT)
             break;
         else if (result == SDL_BUTTON_LEFT || result == SDL_BUTTON_RIGHT) {
+            moved = true;
             time_since_we_moved = SDL_GetTicks();
             double ratiox = ((double)x)/window_width;
             double ratioy = ((double)y)/window_height;
@@ -367,10 +378,13 @@ double mousedriven()
             yru -= direction*0.01*ratioy*yrange;
         } else if (result == SDL_WINDOWEVENT) {
             // force a redraw - e.g. the user just resized the window
+            moved = true;
             time_since_we_moved = SDL_GetTicks();
+            SDL_GetWindowSize(window, &window_width, &window_height);
         }
     }
     // Inform point reached, for potential autopilot target
+    printf("[-] Rendered %d frames.\n", frames);
     return ((double)frames)*1000.0/ticks;
 }
 

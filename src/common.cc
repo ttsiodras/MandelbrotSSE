@@ -18,13 +18,14 @@ void init256colorsMode(const char *windowTitle)
         panic("[x] Couldn't initialize SDL: %d\n", SDL_GetError());
     atexit(SDL_Quit);
 
-    SDL_Window *window = SDL_CreateWindow(
+    window = SDL_CreateWindow(
         windowTitle,
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         MAXX, MAXY, SDL_WINDOW_RESIZABLE);
     if (!window)
         panic("[x] Couldn't create window: %d", SDL_GetError());
+    SDL_GetWindowSize(window, &window_width, &window_height);
 
     if (!minimum_ms_per_frame)
         renderer = SDL_CreateRenderer(window, -1, 0);
@@ -112,8 +113,8 @@ int kbhit(int *xx, int *yy)
             {
                 window_width = event.window.data1;
                 window_height = event.window.data2;
+                return SDL_WINDOWEVENT;
             }
-            return SDL_WINDOWEVENT;
             break;
         case SDL_MOUSEBUTTONDOWN:
             if (event.button.button == SDL_BUTTON_LEFT) {

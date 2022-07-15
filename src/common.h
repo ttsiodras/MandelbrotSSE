@@ -5,9 +5,6 @@
 
 #include <SDL.h>
 
-// Number of Mandelbrot iterations per pixel
-#define ITERA 2048
-
 // Number of frames to zoom-in
 #define ZOOM_FRAMES 2500
 
@@ -20,11 +17,15 @@
 // Fractal resolution
 GLOBAL long MAXX, MAXY;
 
+// Number of Mandelbrot iterations per pixel
+GLOBAL int iterations;
+
 // 60 fps maximum => minimum milliseconds per frame = 1000/60 = 17
 // Default value set in getopt parsing in main.
 GLOBAL unsigned minimum_ms_per_frame;
 
 // SDL global state
+GLOBAL SDL_Window *window;
 GLOBAL SDL_Renderer *renderer;
 GLOBAL SDL_Surface *surface;
 GLOBAL int window_width, window_height;

@@ -52,7 +52,7 @@ void CoreLoopDoubleDefault(double xcur, double ycur, double xstep, unsigned char
     CLEAR_ARRAY(yold);
     CLEAR_ARRAY(k1);
 
-    while (k < ITERA) {
+    while (k < iterations) {
 #define WORK_ON_SLOT(x)                                 \
 	if (!k1[x]) {                                   \
 	    o1 = rez[x] * rez[x];                       \
@@ -64,7 +64,7 @@ void CoreLoopDoubleDefault(double xcur, double ycur, double xstep, unsigned char
 	    if (o1 + o2 > 4)                            \
 		k1[x] = k;                              \
             if (rez[x] == xold[x] && imz[x] == yold[x]) \
-                k1[x] = ITERA;                          \
+                k1[x] = iterations;                     \
 	}
 
         WORK_ON_SLOT(0)
@@ -108,7 +108,7 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 					      // x' = x^2 - y^2 + a
 					      // y' = 2xy + b
 					      //
-    asm("mov    %6,%%ecx\n\t"                 //  ecx is ITERA
+    asm("mov    %6,%%ecx\n\t"                 //  ecx is iterations
         "xor    %%ebx, %%ebx\n\t"             //  period = 0
 	"movapd %3,%%xmm5\n\t"                //  4.     4.        ; xmm5
 	"movapd %1,%%xmm6\n\t"                //  a0     a1        ; xmm6
@@ -141,10 +141,10 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"or     %%eax,%%eax\n\t"              //  have both pixels overflowed ?
 
 	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f) and end the loop
-	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop ITERA times...
+	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop iterations times...
 	"jnz    22f\n\t"                      //  but before redoing the loop, first do periodicity checking
 
-                                              //  We've done the loop ITERA times.
+                                              //  We've done the loop 'iterations' times.
                                               //  Set non-overflowed outputs to 0 (inside xmm3). Here's how:
 	"movapd %%xmm2,%%xmm4\n\t"            //  xmm4 has all 1s in the non-overflowed pixels...
 	"xorpd  %5,%%xmm4\n\t"                //  xmm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
@@ -175,7 +175,7 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"2:\n\t"
 	"movapd %%xmm3,%0\n\t"
 	:"=m"(outputs[0])
-	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0]),"i"(ITERA)
+	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0]),"m"(iterations)
 	:"%eax","%ebx","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","xmm8","xmm9","xmm10","memory");
 
     int tmp = (int)(outputs[0]);
@@ -192,7 +192,7 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 					      // x' = x^2 - y^2 + a
 					      // y' = 2xy + b
 					      //
-    asm("mov    %6,%%ecx\n\t"                 //  ecx is ITERA
+    asm("mov    %6,%%ecx\n\t"                 //  ecx is iterations
         "xor    %%ebx, %%ebx\n\t"             //  period = 0
 	"movapd %3,%%xmm5\n\t"                //  4.     4.        ; xmm5
 	"movapd %1,%%xmm6\n\t"                //  a0     a1        ; xmm6
@@ -225,10 +225,10 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"or     %%eax,%%eax\n\t"              //  have both pixels overflowed ?
 
 	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f) and end the loop
-	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop ITERA times...
+	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop 'iterations' times...
 	"jnz    22f\n\t"                      //  but before redoing the loop, first do periodicity checking
 
-                                              //  We've done the loop ITERA times.
+                                              //  We've done the loop 'iterations' times.
                                               //  Set non-overflowed outputs to 0 (inside xmm3). Here's how:
 	"movapd %%xmm2,%%xmm4\n\t"            //  xmm4 has all 1s in the non-overflowed pixels...
 	"xorpd  %5,%%xmm4\n\t"                //  xmm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
@@ -259,7 +259,7 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"2:\n\t"
 	"movapd %%xmm3,%0\n\t"
 	:"=m"(outputs[0])
-	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0]),"i"(ITERA)
+	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0]),"m"(iterations)
 	:"%eax","%ebx","%ecx","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","xmm8","xmm9","xmm10","memory");
 
     tmp = (int)(outputs[0]);
@@ -284,7 +284,7 @@ void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p
 					       // x' = x^2 - y^2 + a
 					       // y' = 2xy + b
 					       //
-    asm("mov    %6,%%ecx\n\t"                  //  ecx is ITERA
+    asm("mov    %6,%%ecx\n\t"                  //  ecx is iterations
         "xor    %%ebx, %%ebx\n\t"              //  period = 0
 	"vmovapd %3,%%ymm5\n\t"                //  4.     4.      4.     4.   ; ymm5
 	"vmovapd %1,%%ymm6\n\t"                //  a0     a1      a2     a3   ; ymm6
@@ -317,10 +317,10 @@ void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p
 	"or     %%eax,%%eax\n\t"               //  have all 4 pixels overflowed ?
 	"je     2f\n\t"                        //  yes, jump forward to label 2 (hence, 2f) and end the loop
                                                //
-	"dec    %%ecx\n\t"                     //  otherwise, repeat the loop up to ITERA times...
+	"dec    %%ecx\n\t"                     //  otherwise, repeat the loop up to iterations times...
 	"jnz    22f\n\t"                       //  but before redoing the loop, first do periodicity checking
 
-                                               //  We've done the loop ITERA times.
+                                               //  We've done the loop iterations times.
                                                //  Set non-overflowed outputs to 0 (inside ymm3). Here's how:
 	"vmovapd %%ymm2,%%ymm4\n\t"            //  ymm4 has all 1s in the non-overflowed pixels...
 	"vxorpd  %%ymm12,%%ymm4,%%ymm4\n\t"    //  ymm4 has all 1s in the overflowed pixels (toggled, via xoring with allbits)
@@ -350,7 +350,7 @@ void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p
         "vcvttpd2dq %%ymm3, %%xmm0\n\t"        //  Convert 4 doubles into 4 ints.
 	"movapd %%xmm0,%0\n\t"
 	:"=m"(outputs[0])
-	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0]),"i"(ITERA)
+	:"m"(re[0]),"m"(im[0]),"m"(fours[0]),"m"(ones[0]),"m"(allbits[0]),"m"(iterations)
 	:"%eax","%ebx","%ecx","%ymm0","%ymm1","%ymm2","%ymm3","%ymm4","%ymm5","%ymm6","%ymm7","%ymm8","%ymm9","%ymm10","%xmm0","%ymm11","%ymm12","memory");
 
     *(*p)++ = outputs[0];

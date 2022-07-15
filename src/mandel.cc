@@ -26,7 +26,7 @@
 
 void usage(char *argv[])
 {
-    printf("Usage: %s [-a|-m] [-h] [-b] [-v|-s|-d] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
+    printf("Usage: %s [-a|-m] [-h] [-b] [-v|-s|-d] [-i iter] [-p pct] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
     puts("Where:");
     puts("\t-h\tShow this help message");
     puts("\t-m\tRun in mouse-driven mode");
@@ -35,6 +35,9 @@ void usage(char *argv[])
     puts("\t-v\tForce use of AVX");
     puts("\t-s\tForce use of SSE");
     puts("\t-d\tForce use of non-AVX, non-SSE code");
+    puts("\t-i iter\tThe maximum number of iterations of the Mandelbrot loop (default: 2048)");
+    puts("\t-p pct\tThe percentage of pixels computed per frame (default: 0.75)");
+    puts("\t      \t(the rest are copied from the previous frame)");
     puts("\t-f fps\tEnforce upper bound of frames per second (default: 60)");
     puts("\t      \t(use 0 to run at full possible speed)\n");
     puts("If WIDTH and HEIGHT are not provided, they default to: 1024 768");
@@ -46,8 +49,11 @@ int main(int argc, char *argv[])
     int opt, fps = 60;
     bool autoPilot = true, benchmark = false;
     bool forceAVX = false, forceSSE = false, forceDefault = false;
+    double percent = 0.75;
 
-    while ((opt = getopt(argc, argv, "hmabvsdf:")) != -1) {
+    iterations = 2048;
+
+    while ((opt = getopt(argc, argv, "hmabvsdi:p:f:")) != -1) {
         switch (opt) {
             case 'h':
                 usage(argv);
@@ -71,9 +77,19 @@ int main(int argc, char *argv[])
             case 'd':
                 forceDefault = true;
                 break;
+            case 'i':
+                if (1 != sscanf(optarg, "%d", &iterations))
+                    panic("[x] Invalid number of iterations: '%s'", optarg);
+                break;
             case 'f':
                 if (1 != sscanf(optarg, "%d", &fps))
-                    panic("[x] Not a valid frame rate: '%s'", optarg);
+                    panic("[x] Invalid frame rate: '%s'", optarg);
+                break;
+            case 'p':
+                if (1 != sscanf(optarg, "%lf", &percent))
+                    panic("[x] Invalid percentage: '%s'", optarg);
+                if (0.05 > percent || 100.0 < percent)
+                    panic("[x] Invalid percentage: '%s' (0.05 <= percent <= 100.0)", optarg);
                 break;
             default: /* '?' */
                 usage(argv);
@@ -117,7 +133,7 @@ int main(int argc, char *argv[])
         puts("[-] e.g. you can use '-a' to enable autopilot.");
     else
         puts("[-] e.g. you can use '-m' to pilot with your mouse.");
-    printf("[-] Autopilot:  %s\n", autoPilot ? "On" : "Off");
+    printf("[-]\n[-] Autopilot:  %s\n", autoPilot ? "On" : "Off");
     printf("[-] Benchmark:  %s\n", benchmark ? "On" : "Off");
     printf("[-] Dimensions: %ld x %ld\n", MAXX, MAXY);
     if (!minimum_ms_per_frame)
@@ -136,10 +152,11 @@ int main(int argc, char *argv[])
             __builtin_cpu_supports("avx") ?  CoreLoopDoubleAVX
             : __builtin_cpu_supports("sse") ?  CoreLoopDoubleSSE
             : CoreLoopDoubleDefault;
-    printf("[-] Mode: %s\n", 
+    printf("[-] Mode:       %s\n", 
         CoreLoopDouble == CoreLoopDoubleAVX ? "AVX" 
         : CoreLoopDouble == CoreLoopDoubleSSE ? "SSE" 
         : "non-AVX/non-SSE");
+    printf("[-] Iterations: %d\n", iterations);
 #else
     CoreLoopDouble = CoreLoopDoubleDefault;
     printf("[-] Mode: %s\n", "non-AVX");
@@ -155,9 +172,9 @@ int main(int argc, char *argv[])
     double fps_reported;
     if (autoPilot) {
         srand(time(NULL));
-        fps_reported = autopilot(benchmark);
+        fps_reported = autopilot(percent, benchmark);
     } else
-        fps_reported = mousedriven();
+        fps_reported = mousedriven(percent);
     SDL_Quit();
     printf("[-] Frames/sec: %5.2f\n\n", fps_reported);
     fflush(stdout);
