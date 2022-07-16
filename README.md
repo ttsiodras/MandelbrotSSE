@@ -13,8 +13,8 @@ Windows users can download and run a pre-compiled Windows binary
 
 After decompressing, you can simply execute either one of the two .bat
 files. The 'autopilot' one zooms in a specific location, while the other
-one allows you to zoom interactively using your mouse (left-click zooms in,
-right-click zooms out).
+one allows you to zoom interactively using your mouse (left-click/hold zooms in,
+right-click/hold zooms out).
 
 For those of you that want to build from source code, there are 
 cross-compilation instructions later in this document.
@@ -36,11 +36,11 @@ Usage
 You can then try these:
 
     $ src/mandelSSE
-    (Runs in autopilot in a 1024x768 window)
+    (Runs in autopilot mode, in a 1024x768 window)
 
     $ src/mandelSSE -m 1280 720
     (Runs in mouse-driven mode, in a 1280x720 window)
-    (left-click zooms-in, right-click zooms out)
+    (left-click/hold zooms-in, right-click/hold zooms out)
 
 Option `-h` gives you additional information about how to control
 the Mandelbrot zoomer:

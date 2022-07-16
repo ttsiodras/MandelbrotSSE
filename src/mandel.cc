@@ -26,15 +26,21 @@
 
 void usage(char *argv[])
 {
-    printf("Usage: %s [-a|-m] [-h] [-b] [-v|-s|-d] [-i iter] [-p pct] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
+    printf("Usage: %s [-a|-m] [-h] [-b] "
+#ifdef __x86_64__
+           "[-v|-s|-d] "
+#endif
+           "[-i iter] [-p pct] [-f rate] [WIDTH HEIGHT]\n", argv[0]);
     puts("Where:");
     puts("\t-h\tShow this help message");
     puts("\t-m\tRun in mouse-driven mode");
     puts("\t-a\tRun in autopilot mode (default)");
     puts("\t-b\tRun in benchmark mode (implies autopilot)");
+#ifdef __x86_64__
     puts("\t-v\tForce use of AVX");
     puts("\t-s\tForce use of SSE");
     puts("\t-d\tForce use of non-AVX, non-SSE code");
+#endif
     puts("\t-i iter\tThe maximum number of iterations of the Mandelbrot loop (default: 2048)");
     puts("\t-p pct\tThe percentage of pixels computed per frame (default: 0.75)");
     puts("\t      \t(the rest are copied from the previous frame)");
@@ -48,7 +54,9 @@ int main(int argc, char *argv[])
 {
     int opt, fps = 60;
     bool autoPilot = true, benchmark = false;
+#ifdef __x86_64__
     bool forceAVX = false, forceSSE = false, forceDefault = false;
+#endif
     double percent = 0.75;
 
     iterations = 2048;
@@ -68,6 +76,7 @@ int main(int argc, char *argv[])
                 autoPilot = true;
                 benchmark = true;
                 break;
+#ifdef __x86_64__
             case 'v':
                 forceAVX = true;
                 break;
@@ -77,6 +86,7 @@ int main(int argc, char *argv[])
             case 'd':
                 forceDefault = true;
                 break;
+#endif
             case 'i':
                 if (1 != sscanf(optarg, "%d", &iterations))
                     panic("[x] Invalid number of iterations: '%s'", optarg);
@@ -159,7 +169,7 @@ int main(int argc, char *argv[])
     printf("[-] Iterations: %d\n", iterations);
 #else
     CoreLoopDouble = CoreLoopDoubleDefault;
-    printf("[-] Mode: %s\n", "non-AVX");
+    printf("[-] Mode: %s\n", "non-AVX/non-SSE");
 #endif
 
     const char *windowTitle;

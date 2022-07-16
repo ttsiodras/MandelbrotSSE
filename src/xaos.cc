@@ -314,7 +314,7 @@ double autopilot(double percent, bool benchmark)
         if (benchmark)
             break;
     }
-    printf("[-] Rendered %d frames.\n", frames);
+    printf("[-] Rendered  : %d frames\n", frames);
     return ((double)frames)*1000.0/ticks;
 }
 
@@ -384,7 +384,7 @@ double mousedriven(double percent)
         }
     }
     // Inform point reached, for potential autopilot target
-    printf("[-] Rendered %d frames.\n", frames);
+    printf("[-] Rendered  : %d frames\n", frames);
     return ((double)frames)*1000.0/ticks;
 }
 
