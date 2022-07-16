@@ -1,0 +1,6 @@
+configure linguist-vendored
+Makefile.in linguist-vendored
+src/Makefile.in linguist-vendored
+ac-macros/* linguist-vendored
+build-aux/* linguist-vendored
+aclocal.m4 linguist-vendored
