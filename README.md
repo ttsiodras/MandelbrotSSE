@@ -1,7 +1,10 @@
 WHAT IS THIS?
 =============
 
-This is a real-time Mandelbrot fractal zoomer.
+This is an interactive real-time Mandelbrot fractal zoomer.
+You can watch a video of it in action, here:
+
+[![Flying through the Mandelbrot fractal](https://img.youtube.com/vi/bSJJQjh5bBo/0.jpg)](https://www.youtube.com/watch?v=bSJJQjh5bBo)
 
 COMPILE/INSTALL/RUN
 ===================
