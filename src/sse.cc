@@ -138,10 +138,10 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"andpd  %4,%%xmm4\n\t"                //  so, prepare to increase the non-overflowed (and with ones)
 	"addpd  %%xmm4,%%xmm3\n\t"            //  by updating their counters
 
-	"or     %%eax,%%eax\n\t"              //  have both pixels overflowed ?
+	"test   %%eax,%%eax\n\t"              //  have both pixels overflowed ?
 
 	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f) and end the loop
-	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop iterations times...
+	"subl   $1, %%ecx\n\t"                //  otherwise, repeat the loop iterations times...
 	"jnz    22f\n\t"                      //  but before redoing the loop, first do periodicity checking
 
                                               //  We've done the loop 'iterations' times.
@@ -152,8 +152,8 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"jmp    2f\n\t"                       //  And jump to end of everything, where xmm3 is written into outputs
 
 	"22:\n\t"                             //  Periodicity checking
-        "inc %%bl\n\t"                        //  period++
-        "and $0xF, %%bl\n\t"                  //  period &= 0xF
+        "inc %%ebx\n\t"                       //  period++
+        "andl $0xF, %%ebx\n\t"                //  period &= 0xF
         "jnz 11f\n\t"                         //  if period is not zero, continue to check if we're seeing xold, yold again
         "movapd %%xmm0, %%xmm8\n\t"           //  time to update xold[2], yold[2] - store xold[2] in xmm8
         "movapd %%xmm1, %%xmm9\n\t"           //  and yold[2] in xmm9
@@ -163,12 +163,12 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
         "movapd %%xmm8, %%xmm10\n\t"          //  the comparison instruction will modify the target XMM register, so use xmm10
         "cmpeqpd %%xmm0, %%xmm10\n\t"         //  compare xmm10 (which now has xold[2]) with rez[2]. Set all 1s into xmm10 if equal
 	"movmskpd %%xmm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison. 
-        "or %%eax, %%eax\n\t"                 //  are they BOTH zero?
+        "test %%eax, %%eax\n\t"               //  are they BOTH zero?
         "jz 1b\n\t"                           //  Yes - so, neither of the two rez matched with the two xold. Repeat the loop
         "movapd %%xmm9, %%xmm10\n\t"          //  Set xmm10 to contain yold[2]
         "cmpeqpd %%xmm1, %%xmm10\n\t"         //  compare xmm10 with imz[2]. Set all 1s into xmm10 if equal
 	"movmskpd %%xmm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison.
-        "or %%eax, %%eax\n\t"                 //  are they BOTH zero?
+        "test %%eax, %%eax\n\t"               //  are they BOTH zero?
         "jz 1b\n\t"                           //  Yes - so, neither of the two imz matched with the two yold. Repeat the loop
 	"xorpd  %%xmm3,%%xmm3\n\t"            //  Repetition detected. Set both results to 0.0 (both pixels black)
 
@@ -222,10 +222,10 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"andpd  %4,%%xmm4\n\t"                //  so, prepare to increase the non-overflowed (and with ones)
 	"addpd  %%xmm4,%%xmm3\n\t"            //  by updating their counters
 
-	"or     %%eax,%%eax\n\t"              //  have both pixels overflowed ?
+	"test   %%eax,%%eax\n\t"              //  have both pixels overflowed ?
 
 	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f) and end the loop
-	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop 'iterations' times...
+	"subl   $1, %%ecx\n\t"                //  otherwise, repeat the loop 'iterations' times...
 	"jnz    22f\n\t"                      //  but before redoing the loop, first do periodicity checking
 
                                               //  We've done the loop 'iterations' times.
@@ -236,8 +236,8 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"jmp    2f\n\t"                       //  And jump to end of everything, where xmm3 is written into outputs
 
 	"22:\n\t"                             //  Periodicity checking
-        "inc %%bl\n\t"                        //  period++
-        "and $0xF, %%bl\n\t"                  //  period &= 0xF
+        "inc %%ebx\n\t"                       //  period++
+        "andl $0xF, %%ebx\n\t"                //  period &= 0xF
         "jnz 11f\n\t"                         //  if period is not zero, continue to check if we're seeing xold, yold again
         "movapd %%xmm0, %%xmm8\n\t"           //  time to update xold[2], yold[2] - store xold[2] in xmm8
         "movapd %%xmm1, %%xmm9\n\t"           //  and yold[2] in xmm9
@@ -247,12 +247,12 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
         "movapd %%xmm8, %%xmm10\n\t"          //  the comparison instruction will modify the target XMM register, so use xmm10
         "cmpeqpd %%xmm0, %%xmm10\n\t"         //  compare xmm10 (which now has xold[2]) with rez[2]. Set all 1s into xmm10 if equal
 	"movmskpd %%xmm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison. 
-        "or %%eax, %%eax\n\t"                 //  are they BOTH zero?
+        "test %%eax, %%eax\n\t"               //  are they BOTH zero?
         "jz 1b\n\t"                           //  Yes - so, neither of the two rez matched with the two xold. Repeat the loop
         "movapd %%xmm9, %%xmm10\n\t"          //  Set xmm10 to contain yold[2]
         "cmpeqpd %%xmm1, %%xmm10\n\t"         //  compare xmm10 with imz[2]. Set all 1s into xmm10 if equal
 	"movmskpd %%xmm10,%%eax\n\t"          //  the lower 2 bits of EAX now reflect the result of the comparison.
-        "or %%eax, %%eax\n\t"                 //  are they BOTH zero?
+        "test %%eax, %%eax\n\t"               //  are they BOTH zero?
         "jz 1b\n\t"                           //  Yes - so, neither of the two imz matched with the two yold. Repeat the loop
 	"xorpd  %%xmm3,%%xmm3\n\t"            //  Repetition detected. Set both results to 0.0 (both pixels black)
 
@@ -314,10 +314,10 @@ void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p
 	"vandpd  %%ymm11,%%ymm4,%%ymm4\n\t"    //  AND with 4 ones...
 	"vaddpd  %%ymm4,%%ymm3,%%ymm3\n\t"     //  ...so you only update the counters of non-overflowed pixels
 
-	"or     %%eax,%%eax\n\t"               //  have all 4 pixels overflowed ?
+	"test   %%eax,%%eax\n\t"               //  have all 4 pixels overflowed ?
 	"je     2f\n\t"                        //  yes, jump forward to label 2 (hence, 2f) and end the loop
                                                //
-	"dec    %%ecx\n\t"                     //  otherwise, repeat the loop up to iterations times...
+	"subl   $1, %%ecx\n\t"                 //  otherwise, repeat the loop up to iterations times...
 	"jnz    22f\n\t"                       //  but before redoing the loop, first do periodicity checking
 
                                                //  We've done the loop iterations times.
@@ -328,9 +328,9 @@ void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p
 	"jmp    2f\n\t"                        //  And jump to end of everything, where ymm3 is written into outputs
 
 	"22:\n\t"                              //  Periodicity checking
-        "and $0xF, %%bl\n\t"                   //  period &= 0xF
+        "andl $0xF, %%ebx\n\t"                 //  period &= 0xF
         "jnz 11f\n\t"                          //  if period is not zero, continue to check if we're seeing xolds, yolds again
-        "inc %%bl\n\t"                         //  period++
+        "inc %%ebx\n\t"                        //  period++
         "vmovapd %%ymm0, %%ymm8\n\t"           //  time to update xolds and yolds - store xolds in ymm8...
         "vmovapd %%ymm1, %%ymm9\n\t"           //  ...and yolds in ymm9
 	"jmp    1b\n\t"                        //  ..and jump back to the loop beginning.
@@ -338,11 +338,11 @@ void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p
         "11:\n\t"                              //  are we seeing xolds, yolds in our rez, imz?
         "vcmpeqpd %%ymm0, %%ymm8,%%ymm10\n\t"  //  compare ymm8 (which has the xolds) with rez. Set all 1s into ymm10 if equal
 	"vmovmskpd %%ymm10,%%eax\n\t"          //  the lower 4 bits of EAX now reflect the result of the 4 comparisons. 
-        "or %%eax, %%eax\n\t"                  //  are they ALL zero?
+        "test %%eax, %%eax\n\t"                //  are they ALL zero?
         "jz 1b\n\t"                            //  Yes - so, none of the four rez matched with the four xold. Repeat the loop
         "vcmpeqpd %%ymm1, %%ymm9,%%ymm10\n\t"  //  compare ymm9 with imz. Set all 1s into ymm10 if equal
 	"vmovmskpd %%ymm10,%%eax\n\t"          //  the lower 4 bits of EAX now reflect the result of the 4 comparisons.
-        "or %%eax, %%eax\n\t"                  //  are they ALL zero?
+        "test %%eax, %%eax\n\t"                //  are they ALL zero?
         "jz 1b\n\t"                            //  Yes - so, none of the four imz matched with the four yold. Repeat the loop
 	"vxorpd  %%ymm3,%%ymm3,%%ymm3\n\t"     //  Repetition detected in at least one of the 4! Set results to 0.0 (pixels black)
                                                //  Normally, we should do this if ALL 4 repeated. But... good enough. And speedy!
