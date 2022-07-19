@@ -74,7 +74,7 @@ ax.set_xlabel(
     "Number of cores used (via OMP_NUM_THREADS)",
     fontdict={'fontsize': 13})
 ax.set_ylabel(
-    "Achieved frames per second",
+    "Frames per second (window size: 256x192)",
     fontdict={'fontsize': 13})
 
 # Save the figure
