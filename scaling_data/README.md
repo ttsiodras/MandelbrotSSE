@@ -49,7 +49,8 @@ This generated output that looks like this:
     04 thread(s): [-] Frames/sec: 2168.13
     ...
 
-The plot shown above fully confirmed my understanding. The difference
+The plot shown above was generated from this data (in files [log.txt](log.txt)
+and [log2.txt](log2.txt)) and fully confirmed my understanding. The difference
 in performance between the Xaos algorithm and the "naive" Mandelbrot
 computation is quite clear;  but what is also clear is how the 
 latter, being CPU-bound, benefits linearly by the increase of
