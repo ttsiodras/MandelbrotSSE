@@ -61,7 +61,9 @@ fig = plt.figure(1, figsize=(9, 6))
 # Create an axes instance
 ax = fig.add_subplot(111)
 
-bp = plt.plot(cores_used, data_without_p_set, cores_used, data_with_p_set)
+plt.plot(cores_used, data_without_p_set, label="with '-b'")
+plt.plot(cores_used, data_with_p_set, label="with '-b -p 100'")
+plt.legend(loc='lower right')
 
 ## Remove top axes and right axes ticks
 ax.get_xaxis().tick_bottom()
