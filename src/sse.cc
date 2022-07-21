@@ -141,7 +141,7 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"test   %%eax,%%eax\n\t"              //  have both pixels overflowed ?
 
 	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f) and end the loop
-	"subl   $1, %%ecx\n\t"                //  otherwise, repeat the loop iterations times...
+	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop iterations times...
 	"jnz    22f\n\t"                      //  but before redoing the loop, first do periodicity checking
 
                                               //  We've done the loop 'iterations' times.
@@ -225,7 +225,7 @@ void CoreLoopDoubleSSE(double xcur, double ycur, double xstep, unsigned char **p
 	"test   %%eax,%%eax\n\t"              //  have both pixels overflowed ?
 
 	"je     2f\n\t"                       //  yes, jump forward to label 2 (hence, 2f) and end the loop
-	"subl   $1, %%ecx\n\t"                //  otherwise, repeat the loop 'iterations' times...
+	"dec    %%ecx\n\t"                    //  otherwise, repeat the loop 'iterations' times...
 	"jnz    22f\n\t"                      //  but before redoing the loop, first do periodicity checking
 
                                               //  We've done the loop 'iterations' times.
@@ -317,7 +317,7 @@ void CoreLoopDoubleAVX(double xcur, double ycur, double xstep, unsigned char **p
 	"test   %%eax,%%eax\n\t"               //  have all 4 pixels overflowed ?
 	"je     2f\n\t"                        //  yes, jump forward to label 2 (hence, 2f) and end the loop
                                                //
-	"subl   $1, %%ecx\n\t"                 //  otherwise, repeat the loop up to iterations times...
+	"dec    %%ecx\n\t"                     //  otherwise, repeat the loop up to iterations times...
 	"jnz    22f\n\t"                       //  but before redoing the loop, first do periodicity checking
 
                                                //  We've done the loop iterations times.
