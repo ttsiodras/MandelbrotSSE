@@ -35,6 +35,14 @@ Then, build the code - with...
     $ ./configure
     $ make
 
+For people that prefer browsers
+-------------------------------
+
+You can also use a [WASM port](https://www.thanassis.space/mandel.html) that
+runs in modern browsers.  But please note that the native code is dramatically
+faster, since it uses AVX/SSE instructions, and utilises all cores available in
+your machine. WASM is a poor substitute :-)
+
 Usage
 -----
 
