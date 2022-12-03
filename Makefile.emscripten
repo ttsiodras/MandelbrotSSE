@@ -1,0 +1,6 @@
+all:
+	emconfigure ./configure
+	emmake make
+	cd src ; emcc *.o -s WASM=1 -s USE_SDL=2 -O3 -o mandel.js
+	@echo "Now use my placeholder HTML from here: https://www.thanassis.space/mandel.html"
+	@echo "to wrap around src/mandel.wasm and src/mandel.js"
