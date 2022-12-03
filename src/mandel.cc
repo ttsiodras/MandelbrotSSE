@@ -1,11 +1,12 @@
+#include <SDL2/SDL.h>
+#include <emscripten.h>
+
 #include <config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#include <SDL.h>
 
 // With this macro defined... 
 #define GLOBAL
@@ -48,6 +49,18 @@ void usage(char *argv[])
     puts("\t      \t(use 0 to run at full possible speed)\n");
     puts("If WIDTH and HEIGHT are not provided, they default to: 1024 768");
     exit(1);
+}
+
+void mainloop(void *arg)
+{
+    context *ctx = static_cast<context*>(arg);
+    SDL_Renderer *renderer = ctx->renderer;
+ 
+    mousedriven(ctx->percent);
+    //autopilot(ctx->percent);
+    SDL_RenderPresent(renderer);
+
+    ctx->iteration++;
 }
 
 int main(int argc, char *argv[])
@@ -106,8 +119,8 @@ int main(int argc, char *argv[])
         }
     }
     if (optind == argc) {
-        MAXX = 1024;
-        MAXY = 768;
+        MAXX = 640;
+        MAXY = 480;
     } else if (optind == argc-1) {
         puts("[x] You didn't pass the MAXY argument!\n");
         usage(argv);
@@ -179,6 +192,11 @@ int main(int argc, char *argv[])
         windowTitle = "Left click/hold zooms-in, right zooms-out, ESC quits.";
     init256colorsMode(windowTitle);
 
+    context ctx;
+    ctx.renderer = renderer;
+    ctx.iteration = 0;
+    ctx.percent = percent;
+    emscripten_set_main_loop_arg(mainloop, &ctx, -1, 1 /* call the function repeatedly */);
     double fps_reported;
     if (autoPilot) {
         srand(time(NULL));

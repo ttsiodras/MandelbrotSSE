@@ -19,7 +19,7 @@ void init256colorsMode(const char *windowTitle)
     atexit(SDL_Quit);
 
     window = SDL_CreateWindow(
-        windowTitle,
+        "An emscripten-port of my MandelbrotSSE",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         MAXX, MAXY, SDL_WINDOW_RESIZABLE);
@@ -33,6 +33,10 @@ void init256colorsMode(const char *windowTitle)
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
     if (!renderer)
         panic("[x] Couldn't create renderer: %d", SDL_GetError());
+
+    context ctx;
+    ctx.renderer = renderer;
+    ctx.iteration = 0;
 
     surface = SDL_CreateRGBSurface(
         SDL_SWSURFACE, MAXX, MAXY, 8, 0, 0, 0, 0);

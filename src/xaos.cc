@@ -253,6 +253,7 @@ void mandel(
 AUTO_DISPATCH
 double autopilot(double percent, bool benchmark)
 {
+    puts("Entered auto-pilot");
     static double interesting_points[][2] = {
         {-0.72996052273553402312, -0.24047620199671820851},
         {-0.73162093699311890000, -0.25655927868100719680},
@@ -293,8 +294,8 @@ double autopilot(double percent, bool benchmark)
             percentage_of_pixels = percent;
 
             // Limit frame rate to 60 fps.
-            if (en - st < minimum_ms_per_frame)
-                SDL_Delay(minimum_ms_per_frame - en + st);
+            // if (en - st < minimum_ms_per_frame)
+            //     SDL_Delay(minimum_ms_per_frame - en + st);
 
             int x,y;
             int result = kbhit(&x, &y);
@@ -310,6 +311,8 @@ double autopilot(double percent, bool benchmark)
             yld += (targety - yld)/100.;
             yru += (targety - yru)/100.;
             frames++;
+            printf("%d\n", frames);
+            SDL_RenderPresent(renderer);
         }
         if (benchmark)
             break;
@@ -319,16 +322,16 @@ double autopilot(double percent, bool benchmark)
 }
 
 AUTO_DISPATCH
-double mousedriven(double percent)
+bool mousedriven(double percent)
 {
-    int x,y;
-    double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
-    unsigned time_since_we_moved = SDL_GetTicks();
-    bool drawn_full = false, moved = false;
-    int frames = 0;
-    unsigned long ticks = 0;
+    static int x,y;
+    static double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
+    static unsigned time_since_we_moved = SDL_GetTicks();
+    static bool drawn_full = false, moved = false;
+    static int frames = 0;
+    static unsigned long ticks = 0;
 
-    while(1) {
+    if(1) {
         if (!moved && (SDL_GetTicks() - time_since_we_moved > 200)) {
             // if we haven't moved for more than 200ms
             // then draw an accurate frame (0% reuse from previous frame)
@@ -340,10 +343,10 @@ double mousedriven(double percent)
                 unsigned en = SDL_GetTicks();
                 ticks += en-st;
                 frames++;
-                if (en - st < minimum_ms_per_frame)
-                    SDL_Delay(minimum_ms_per_frame - en + st);
+                //if (en - st < minimum_ms_per_frame)
+                //    SDL_Delay(minimum_ms_per_frame - en + st);
             } else
-                SDL_Delay(minimum_ms_per_frame);
+                ;//SDL_Delay(minimum_ms_per_frame);
         } else if (moved) {
             // Otherwise, if we moved, draw a low-accuracy frame: reuse pixels
             // from previous frame, and only compute 'percent' new ones
@@ -354,13 +357,13 @@ double mousedriven(double percent)
             ticks += en-st;
             frames++;
             // Limit frame rate to desired one (default: 60 fps)
-            if (en - st < minimum_ms_per_frame)
-                SDL_Delay(minimum_ms_per_frame - en + st);
+            //if (en - st < minimum_ms_per_frame)
+            //    SDL_Delay(minimum_ms_per_frame - en + st);
             moved = false;
         }
         int result = kbhit(&x, &y);
         if (result == SDL_QUIT)
-            break;
+            return false;
         else if (result == SDL_BUTTON_LEFT || result == SDL_BUTTON_RIGHT) {
             moved = true;
             time_since_we_moved = SDL_GetTicks();
@@ -371,7 +374,7 @@ double mousedriven(double percent)
             double direction = result==SDL_BUTTON_LEFT ? 1. : -1.;
             // Don't zoom beyond the level allowed by IEEE754
             if (result == SDL_BUTTON_LEFT && xrange < ZOOM_LIMIT)
-                continue;
+                return true;
             xld += direction*0.01*ratiox*xrange;
             xru -= direction*0.01*(1.-ratiox)*xrange;
             yld += direction*0.01*(1.-ratioy)*yrange;
@@ -383,8 +386,8 @@ double mousedriven(double percent)
             SDL_GetWindowSize(window, &window_width, &window_height);
         }
     }
-    // Inform point reached, for potential autopilot target
-    printf("[-] Rendered  : %d frames\n", frames);
-    return ((double)frames)*1000.0/ticks;
+    // // Inform point reached, for potential autopilot target
+    // printf("[-] Rendered  : %d frames\n", frames);
+    // return ((double)frames)*1000.0/ticks;
 }
 

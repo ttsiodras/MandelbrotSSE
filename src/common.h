@@ -14,6 +14,13 @@
 #define GLOBAL extern
 #endif
 
+struct context
+{
+    SDL_Renderer *renderer;
+    int iteration;
+    double percent;
+};
+
 // Fractal resolution
 GLOBAL long MAXX, MAXY;
 
