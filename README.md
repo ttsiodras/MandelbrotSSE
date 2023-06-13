@@ -8,6 +8,8 @@ You can watch a video of it in action, here:
 
 *(Click on picture to play the video)*
 
+[Reddit discussion about it](https://web.archive.org/web/20220716233419/https://www.reddit.com/r/programming/comments/w0g8oc/1000x_speedup_on_interactive_mandelbrot_zooms/)
+
 COMPILE/INSTALL/RUN
 ===================
 
