@@ -8,6 +8,9 @@
 // Beyond this, things get shaky...
 #define ZOOM_LIMIT 1e295*MAXX*DBL_MIN
 
+const double starting_point[2]{-0.75, 0.};
+const double starting_scale = 1.1;
+
 // Structure used to sort the coordinate distances from the previous frame.
 // Keep reading further below to understand how this is used.
 typedef struct tagPoint {
@@ -276,7 +279,9 @@ double autopilot(double percent, bool benchmark)
         start_idx++;
 
         // Re-initialize the window location...
-        double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
+        double yscale = starting_scale, xscale = yscale * window_width / window_height;
+        double yld = starting_point[1] - yscale, yru = starting_point[1] + yscale;
+        double xld = starting_point[0] - xscale, xru = starting_point[0] + xscale;
 
         // Start by drawing everything...
         double percentage_of_pixels = 100.0;
@@ -322,7 +327,9 @@ AUTO_DISPATCH
 double mousedriven(double percent)
 {
     int x,y;
-    double xld = -2.2, yld=-1.1, xru=-2+(MAXX/MAXY)*3., yru=1.1;
+    double yscale = starting_scale, xscale = yscale * window_width / window_height;
+    double yld = starting_point[1] - yscale, yru = starting_point[1] + yscale;
+    double xld = starting_point[0] - xscale, xru = starting_point[0] + xscale;
     unsigned time_since_we_moved = SDL_GetTicks();
     bool drawn_full = false, moved = false;
     int frames = 0;
